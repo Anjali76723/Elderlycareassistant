@@ -1,0 +1,110 @@
+/* client/src/styles/animations.css */
+
+/* ------------------------------------------------
+   Petal pop + center pop + card entrance animations
+   ------------------------------------------------ */
+
+@keyframes petal-pop {
+  0% {
+    transform: scale(0.08) translateY(18px) rotate(0deg);
+    opacity: 0;
+    filter: blur(3px);
+  }
+  60% {
+    transform: scale(1.12) translateY(-6px) rotate(0deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1) translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes center-pop {
+  0% {
+    transform: scale(0.18);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes card-pop {
+  0% {
+    transform: translateY(28px) scale(0.985);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* small float for decorative dot */
+@keyframes float-slow {
+  0% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(-10px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.9; }
+}
+
+/* ------------------------------------------------
+   Utility classes used by SignUp.jsx
+   (kept small so Tailwind purge won't remove everything)
+   ------------------------------------------------ */
+
+.flower-petal {
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  opacity: 0;
+  /* fallback animation in case inline style is missing */
+  animation: petal-pop 600ms cubic-bezier(.16,.9,.3,1) 180ms both;
+  transform-box: fill-box;
+}
+
+.flower-center {
+  transform-origin: 50% 50%;
+}
+
+.signup-card-anim {
+  animation: card-pop 640ms cubic-bezier(.2,.9,.3,1) 1400ms both;
+}
+
+.float-dot {
+  animation: float-slow 5.5s ease-in-out infinite;
+}
+
+/* subtle input focus micro-interaction */
+.input-focus {
+  transition: box-shadow .18s ease, transform .12s ease, border-color .12s ease;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.input-focus:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(2,6,23,0.25);
+  outline: none;
+}
+
+/* background gradient used in component container */
+.elder-bg {
+  background-image: linear-gradient(180deg, rgba(2,2,61,0.98) 0%, rgba(3,3,83,0.96) 36%, rgba(21,24,37,0.7) 100%);
+  min-height: 100vh;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .flower-petal, .flower-center, .signup-card-anim, .float-dot {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

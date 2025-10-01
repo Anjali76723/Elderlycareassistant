@@ -1,0 +1,103 @@
+// server/index.js
+require("dotenv").config();
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
+const connectDb = require("./config/connectDb");
+
+// routers
+const authRouter = require("./routes/auth.routes");
+const userRouter = require("./routes/user.routes");
+const emergencyRouter = require("./routes/emergency.routes");
+const assistantRouter = require("./routes/assistant.routes");
+const reminderRouter = require("./routes/reminder.routes"); // <-- mount this
+
+// services
+const startReminderScheduler = require("./services/reminderScheduler");
+
+const app = express();
+
+// Basic middleware
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
+app.use(express.json());
+app.use(cookieParser());
+
+// helpful JSON parse error handler
+app.use((err, req, res, next) => {
+  if (err && err.type === "entity.parse.failed") {
+    return res.status(400).json({ message: "Invalid JSON in request body" });
+  }
+  next(err);
+});
+
+// mount routers
+app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
+app.use("/api/emergency", emergencyRouter);
+app.use("/api/assistant", assistantRouter);
+app.use("/api/reminder", reminderRouter); // <-- mounted here
+
+// simple health check
+app.get("/", (req, res) => res.json({ message: "Server OK" }));
+
+// create HTTP server and socket.io server
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// attach io to express app so controllers can access it via req.app.get("io")
+app.set("io", io);
+
+// socket.io connection handling
+io.on("connection", (socket) => {
+  console.log("socket connected", socket.id);
+
+  // join personal room (userId must be emitted by client after login)
+  socket.on("join", (userId) => {
+    if (!userId) return;
+    socket.join(String(userId));
+    console.log("socket joined personal room", userId);
+  });
+
+  // caregiver room
+  socket.on("join-caregiver", (caregiverId) => {
+    socket.join("caregivers");
+    console.log("caregiver socket joined room caregivers", caregiverId);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("socket disconnected", socket.id);
+  });
+});
+
+// start server and connect DB
+const PORT = process.env.PORT || 8000;
+
+server.listen(PORT, async () => {
+  console.log(`Server listening on port ${PORT}`);
+  try {
+    await connectDb();
+  } catch (err) {
+    console.error("connectDb error (caught in index):", err && err.message ? err.message : err);
+  }
+
+  // start the reminder scheduler if available (pass io so it can emit)
+  try {
+    if (startReminderScheduler && typeof startReminderScheduler === "function") {
+      startReminderScheduler(io);
+    }
+  } catch (err) {
+    console.warn("Could not start reminder scheduler:", err && err.message ? err.message : err);
+  }
+});
