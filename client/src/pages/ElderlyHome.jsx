@@ -223,22 +223,13 @@ export default function ElderlyHome() {
         console.warn("Could not get location:", geoErr);
       }
 
-      const response = await axios.post(
-        `${serverUrl}/api/emergency/alert`,
-        { message, location, sentVia },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          withCredentials: true
-        }
-      );
+      const response = await api.post('/api/emergency/alert', { message, location, sentVia });
       
       console.log("sendEmergency response:", response.data);
       
       if (response.data.message === "alert created" || response.data.alert) {
         await speakText("Help is on the way. Your caregivers have been notified.", "en-IN");
+        setSendingEmergency(false);
       } else {
         throw new Error('Failed to send alert');
       }
@@ -254,7 +245,7 @@ export default function ElderlyHome() {
   const ack = async (action, snoozeMinutes = 10) => {
     if (!currentReminder) return;
     try {
-      await axios.post(`${serverUrl}/api/reminder/ack/${currentReminder.id}`, { action, snoozeMinutes }, { withCredentials: true });
+      await api.post(`/api/reminder/ack/${currentReminder.id}`, { action, snoozeMinutes });
       setCurrentReminder(null);
     } catch (err) {
       console.error(err);
@@ -620,13 +611,7 @@ export default function ElderlyHome() {
         throw new Error('No authentication token found');
       }
 
-      const response = await axios.get(`${serverUrl}/api/caregivers`, { 
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        withCredentials: true
-      });
+      const response = await api.get('/api/caregivers', { withCredentials: true });
       
       if (response.data && Array.isArray(response.data)) {
         setCaregivers(response.data);
@@ -676,18 +661,10 @@ export default function ElderlyHome() {
       };
 
       if (editingId) {
-        await axios.put(
-          `${serverUrl}/api/caregivers/${editingId}`, 
-          formData, 
-          config
-        );
+        await api.put(`/api/caregivers/${editingId}`, formData);
         toast.success('Caregiver updated successfully');
       } else {
-        await axios.post(
-          `${serverUrl}/api/caregivers`, 
-          formData, 
-          config
-        );
+        await api.post('/api/caregivers', formData);
         toast.success('Caregiver added successfully');
       }
       
@@ -728,16 +705,7 @@ export default function ElderlyHome() {
           throw new Error('No authentication token found');
         }
 
-        await axios.delete(
-          `${serverUrl}/api/caregivers/${id}`, 
-          { 
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            withCredentials: true
-          }
-        );
+        await api.delete(`/api/caregivers/${id}`);
         toast.success('Caregiver removed successfully');
         fetchCaregivers();
       } catch (error) {
@@ -760,17 +728,7 @@ export default function ElderlyHome() {
         throw new Error('No authentication token found');
       }
 
-      await axios.post(
-        `${serverUrl}/api/caregivers/${id}/test-sms`, 
-        {}, 
-        { 
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          withCredentials: true
-        }
-      );
+      await api.post(`/api/caregivers/${id}/test-sms`, {});
       toast.success('Test SMS sent successfully');
     } catch (error) {
       console.error('Error sending test SMS:', error);
