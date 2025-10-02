@@ -1,5 +1,5 @@
 // client/src/pages/SignIn.jsx
-import React, { useEffect, useRef, useState, useContext } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { userDataContext } from "../context/UserContext";
@@ -16,61 +16,168 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
-  // petal animation state (same pattern as SignUp for visual consistency)
-  const PETAL_COUNT = 8;
-  const STAGGER_MS = 110;
-  const [openedCount, setOpenedCount] = useState(0);
-  const timeoutsRef = useRef([]);
-
-  // inject small component-specific CSS so you don't need to modify global CSS
+  // Inject beautiful caring CSS animations
   useEffect(() => {
-    const id = "signin-local-styles";
+    const id = "signin-enhanced-styles";
     if (document.getElementById(id)) return;
 
     const css = `
-      /* left background image if present in public/ */
-      .signin-left-bg {
-        background-image: url('/signin-left.png');
-        background-repeat: no-repeat;
-        background-position: center 42%;
-        background-size: contain;
+      @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
       }
 
-      /* slow subtle movement */
-      @keyframes float-y {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-8px); }
-        100% { transform: translateY(0px); }
+      @keyframes float-hearts {
+        0% { 
+          transform: translateY(0) translateX(0) scale(0.5); 
+          opacity: 0; 
+        }
+        2% { 
+          opacity: 0.7; 
+        }
+        5% {
+          transform: translateY(-5vh) translateX(5px) scale(0.8);
+          opacity: 1;
+        }
+        15% {
+          transform: translateY(-20vh) translateX(-8px) scale(0.9);
+          opacity: 1;
+        }
+        30% {
+          transform: translateY(-40vh) translateX(10px) scale(1);
+          opacity: 1;
+        }
+        50% { 
+          transform: translateY(-60vh) translateX(-5px) scale(1.1); 
+          opacity: 1; 
+        }
+        70% {
+          transform: translateY(-80vh) translateX(8px) scale(1);
+          opacity: 1;
+        }
+        85% {
+          transform: translateY(-100vh) translateX(-10px) scale(0.9);
+          opacity: 0.8;
+        }
+        95% {
+          transform: translateY(-115vh) translateX(0) scale(0.7);
+          opacity: 0.5;
+        }
+        100% { 
+          transform: translateY(-130vh) translateX(0) scale(0.5); 
+          opacity: 0; 
+        }
       }
-      .float-slow { animation: float-y 6s ease-in-out infinite; }
 
-      /* bloom for form card */
-      @keyframes card-bloom {
-        0% { opacity: 0; transform: translateY(18px) scale(.98); }
-        60% { opacity: 1; transform: translateY(-6px) scale(1.01); }
-        100% { transform: translateY(0) scale(1); }
+      @keyframes gentle-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.05); opacity: 0.8; }
       }
-      .card-bloom { animation: card-bloom 520ms cubic-bezier(.2,.9,.2,1) both; }
 
-      /* input underline / focus */
-      .input-anim {
-        transition: box-shadow .18s ease, transform .14s ease;
+      @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      .input-anim:focus {
-        box-shadow: 0 8px 24px rgba(2,6,23,0.28);
+
+      @keyframes shimmer {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
+      }
+
+      @keyframes ripple {
+        0% { transform: scale(0.8); opacity: 1; }
+        100% { transform: scale(2.5); opacity: 0; }
+      }
+
+      .animated-bg {
+        background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe);
+        background-size: 400% 400%;
+        animation: gradient-shift 15s ease infinite;
+      }
+
+      .floating-heart {
+        position: fixed;
+        bottom: 0;
+        font-size: 24px;
+        animation: float-hearts linear infinite;
+        pointer-events: none;
+        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+        z-index: 1;
+        will-change: transform, opacity;
+      }
+
+      .glass-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        animation: fade-in-up 0.6s ease-out;
+      }
+
+      .caring-input {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid transparent;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .caring-input:focus {
+        background: rgba(255, 255, 255, 1);
+        border-color: #667eea;
         transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        outline: none;
       }
 
-      /* suave button */
-      .cta-btn {
-        transition: transform .12s ease, box-shadow .12s ease;
+      .caring-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
       }
-      .cta-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 28px rgba(16,24,40,0.16); }
 
-      /* subtle petal transition handled inline for transform/opacity */
-      /* reduced motion: open all petals at once */
+      .caring-button:hover:not(:disabled) {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+      }
+
+      .caring-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -200%;
+        width: 200%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 3s infinite;
+      }
+
+      .ripple-circle {
+        position: absolute;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        border-radius: 50%;
+        animation: ripple 3s infinite;
+      }
+
+      .toggle-option {
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .toggle-option:hover {
+        transform: scale(1.05);
+      }
+
+      .toggle-option.active {
+        background: rgba(102, 126, 234, 0.3);
+        border-color: #667eea;
+      }
+
       @media (prefers-reduced-motion: reduce) {
-        .float-slow { animation: none; }
+        .animated-bg, .floating-heart, .caring-button::before, .ripple-circle {
+          animation: none;
+        }
+        .glass-card { animation: none; }
       }
     `;
     const s = document.createElement("style");
@@ -79,33 +186,6 @@ export default function SignIn() {
     document.head.appendChild(s);
   }, []);
 
-  // open petals staggered
-  useEffect(() => {
-    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      setOpenedCount(PETAL_COUNT);
-      return;
-    }
-
-    setOpenedCount(0);
-    timeoutsRef.current.forEach((t) => clearTimeout(t));
-    timeoutsRef.current = [];
-
-    for (let i = 0; i < PETAL_COUNT; i++) {
-      const t = setTimeout(() => setOpenedCount((p) => p + 1), i * STAGGER_MS);
-      timeoutsRef.current.push(t);
-    }
-    // after petals, ensure full center shows
-    const tEnd = setTimeout(() => setOpenedCount((p) => Math.max(p, PETAL_COUNT)), PETAL_COUNT * STAGGER_MS + 80);
-    timeoutsRef.current.push(tEnd);
-
-    return () => {
-      timeoutsRef.current.forEach((t) => clearTimeout(t));
-      timeoutsRef.current = [];
-    };
-    // run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,6 +207,10 @@ export default function SignIn() {
         );
       }
       setLoading(false);
+      // Store token in localStorage for authenticated API requests
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+      }
       setUserData(res.data.user);
       navigate("/");
     } catch (error) {
@@ -135,176 +219,269 @@ export default function SignIn() {
     }
   };
 
-  // Render petals (same visual family as SignUp)
-  const renderPetals = () => {
-    return Array.from({ length: PETAL_COUNT }).map((_, i) => {
-      const angle = i * (360 / PETAL_COUNT);
-      const isOpen = i < openedCount;
-      const ellipseStyle = {
-        transition: "transform 480ms cubic-bezier(.16,.9,.3,1), opacity 300ms ease",
-        transformOrigin: "50% 75%",
-        transform: isOpen ? "scale(1) translateY(0)" : "scale(0.6) translateY(22px)",
-        opacity: isOpen ? 0.95 : 0,
-        fill: `rgba(255,255,255,${0.06 + ((i % 3) * 0.03)})`,
-      };
-
-      return (
-        <g key={i} transform={`rotate(${angle})`}>
-          <ellipse cx="0" cy="-40" rx="30" ry="62" style={ellipseStyle} />
-        </g>
+  // Render floating white hearts - continuously moving from bottom to top at different timestamps
+  const renderFloatingHearts = () => {
+    const hearts = [];
+    const totalHearts = 50; // More hearts for continuous coverage
+    
+    for (let i = 0; i < totalHearts; i++) {
+      // Each heart has different duration and delay for varied motion
+      const duration = 10 + (i % 8); // Durations from 10-17 seconds
+      const delay = (i * 0.4) % 15; // Stagger delays within 15 second window
+      const leftPosition = (i * 7 + Math.random() * 20) % 100; // Spread across screen
+      const size = 30 + (i % 5) * 6; // Sizes from 30-60px
+      
+      hearts.push(
+        <div
+          key={`heart-${i}`}
+          className="floating-heart"
+          style={{
+            left: `${leftPosition}%`,
+            animationDuration: `${duration}s`,
+            animationDelay: `${delay}s`,
+            animationIterationCount: 'infinite',
+            fontSize: `${size}px`,
+            color: 'white',
+            textShadow: '0 0 20px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 255, 255, 0.6)',
+          }}
+        >
+          ♥
+        </div>
       );
-    });
+    }
+    return hearts;
+  };
+
+  // Render decorative ripple circles
+  const renderRipples = () => {
+    return [1, 2, 3].map((i) => (
+      <div
+        key={i}
+        className="ripple-circle"
+        style={{
+          width: '300px',
+          height: '300px',
+          top: '20%',
+          left: '10%',
+          animationDelay: `${i * 1}s`
+        }}
+      />
+    ));
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0b1028] to-[#1b2548] py-8 px-6">
-      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        {/* LEFT: decoration */}
-        <div className="relative flex flex-col items-center justify-center signin-left-bg overflow-hidden">
-          {/* subtle moving overlay */}
-          <div className="absolute inset-0 opacity-40 filter blur-sm float-slow" aria-hidden />
-          <div className="relative z-10 flex flex-col items-center gap-6 py-16 px-6">
-            {/* atom/flower svg */}
-            <svg className="w-72 h-72" viewBox="-110 -110 220 220" aria-hidden>
-              <g transform="translate(0,8)">
-                {renderPetals()}
-                <circle
-                  cx="0"
-                  cy="36"
-                  r="28"
-                  fill="#ffffff"
-                  style={{
-                    transition: "opacity 380ms ease, transform 380ms ease",
-                    opacity: openedCount >= PETAL_COUNT ? 1 : 0,
-                    transform: openedCount >= PETAL_COUNT ? "scale(1)" : "scale(.84)",
-                  }}
-                />
-                {/* a tiny soft highlight */}
-                <circle
-                  cx="-6"
-                  cy="26"
-                  r="10"
-                  fill="rgba(255,255,255,0.08)"
-                  style={{
-                    transition: "opacity 480ms ease",
-                    opacity: openedCount >= PETAL_COUNT ? 1 : 0,
-                  }}
-                />
-              </g>
-            </svg>
+    <div className="min-h-screen relative overflow-hidden animated-bg flex items-center justify-center py-8 px-4">
+      {/* Floating hearts background */}
+      {renderFloatingHearts()}
+      
+      {/* Decorative ripple circles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {renderRipples()}
+      </div>
 
-            <div className="text-center px-6">
-              <h2 className="text-4xl font-bold text-white/95">Welcome back</h2>
-              <p className="text-white/80 mt-3 max-w-md">
-                Sign in to manage reminders, SOS, and voice features. Simple and friendly.
-              </p>
+      <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
+        {/* LEFT: Welcome Section */}
+        <div className="hidden lg:flex flex-col items-center justify-center text-center p-8 space-y-6">
+          {/* Large caring heart icon with pulse animation */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-white/20 rounded-full blur-2xl" style={{ animation: 'gentle-pulse 3s ease-in-out infinite' }} />
+            <div className="relative bg-white/10 backdrop-blur-md rounded-full p-12 border-2 border-white/30">
+              <svg className="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Welcome text */}
+          <div className="space-y-4">
+            <h1 className="text-5xl font-bold text-white drop-shadow-lg">
+              Welcome Back!
+            </h1>
+            <p className="text-xl text-white/90 max-w-md leading-relaxed">
+              Your trusted companion for elderly care. Safe, secure, and always here for you.
+            </p>
+            
+            {/* Feature badges */}
+            <div className="flex items-center justify-center gap-4 pt-4 flex-wrap">
+              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="text-white font-medium">Secure Login</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                </svg>
+                <span className="text-white font-medium">Always Alert</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* RIGHT: form */}
-        <div className="relative z-20">
+        {/* RIGHT: Login Form */}
+        <div className="w-full max-w-md mx-auto">
           <form
             onSubmit={handleSubmit}
-            className="bg-gradient-to-b from-[#121330]/80 to-[#121330]/60 p-8 rounded-2xl shadow-xl card-bloom"
-            aria-label="Sign in"
+            className="glass-card rounded-3xl p-8 space-y-6"
+            aria-label="Sign in form"
           >
-            <h2 className="text-3xl font-semibold text-white mb-2">Sign In</h2>
-            <p className="text-sm text-white/70 mb-4">Sign in as caregiver or elderly (PIN).</p>
-
-            <label className="block mb-2 text-white">Email</label>
-            <input
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              type="email"
-              className="w-full mb-4 p-3 rounded text-black bg-white text-lg input-anim"
-            />
-
-            <div className="mb-3 flex items-center gap-4">
-              <label className="inline-flex items-center text-white">
-                <input
-                  type="radio"
-                  checked={!isElderly}
-                  onChange={() => setIsElderly(false)}
-                  className="mr-2"
-                />
-                Caregiver
-              </label>
-              <label className="inline-flex items-center text-white">
-                <input
-                  type="radio"
-                  checked={isElderly}
-                  onChange={() => setIsElderly(true)}
-                  className="mr-2"
-                />
-                Elderly (PIN)
-              </label>
+            {/* Header with icon */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-3">
+                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h2 className="text-3xl font-bold text-white">Sign In</h2>
+              <p className="text-white/80">Access your caring dashboard</p>
             </div>
 
+            {/* Email Input */}
+            <div className="space-y-2">
+              <label className="block text-white font-medium text-sm">Email Address</label>
+              <input
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                type="email"
+                className="w-full p-4 rounded-xl text-gray-800 caring-input text-base font-medium"
+              />
+            </div>
+
+            {/* User Type Toggle */}
+            <div className="space-y-3">
+              <label className="block text-white font-medium text-sm">Login As</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsElderly(false)}
+                  className={`toggle-option p-4 rounded-xl border-2 font-semibold transition-all ${
+                    !isElderly 
+                      ? 'active bg-white/30 border-white text-white' 
+                      : 'bg-white/10 border-white/30 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                    </svg>
+                    <span>Caregiver</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsElderly(true)}
+                  className={`toggle-option p-4 rounded-xl border-2 font-semibold transition-all ${
+                    isElderly 
+                      ? 'active bg-white/30 border-white text-white' 
+                      : 'bg-white/10 border-white/30 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                    <span>Elderly</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Password Input (for Caregiver) */}
             {!isElderly && (
-              <>
-                <label className="block mb-2 text-white">Password</label>
+              <div className="space-y-2">
+                <label className="block text-white font-medium text-sm">Password</label>
                 <div className="relative">
                   <input
-                    placeholder="Password"
+                    required
+                    placeholder="Enter your password"
                     type={showPass ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full mb-4 p-3 rounded text-black bg-white text-lg input-anim"
+                    className="w-full p-4 pr-20 rounded-xl text-gray-800 caring-input text-base font-medium"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass((s) => !s)}
-                    className="absolute right-3 top-3 text-sm text-slate-600 bg-white/0 px-2 py-1 rounded"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
                     aria-label={showPass ? "Hide password" : "Show password"}
                   >
                     {showPass ? "Hide" : "Show"}
                   </button>
                 </div>
-              </>
+              </div>
             )}
 
+            {/* PIN Input (for Elderly) */}
             {isElderly && (
-              <>
-                <label className="block mb-2 text-white">PIN</label>
+              <div className="space-y-2">
+                <label className="block text-white font-medium text-sm">PIN Code</label>
                 <input
-                  placeholder="PIN (e.g. 1234)"
+                  required
+                  placeholder="Enter your 4-digit PIN"
+                  type="text"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
-                  className="w-full mb-4 p-3 rounded text-black bg-white text-lg input-anim"
+                  maxLength="6"
+                  className="w-full p-4 rounded-xl text-gray-800 caring-input text-base font-medium text-center tracking-widest"
                 />
-              </>
+              </div>
             )}
 
-            {err && <div className="text-red-400 mb-3">{err}</div>}
+            {/* Error Message */}
+            {err && (
+              <div className="bg-red-500/20 border border-red-400/50 text-red-100 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span>{err}</span>
+              </div>
+            )}
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 p-4 bg-white text-black rounded text-lg font-semibold cta-btn"
+              className="w-full p-4 rounded-xl text-white text-lg font-bold caring-button disabled:opacity-50 disabled:cursor-not-allowed relative z-10"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </span>
+              ) : (
+                "Sign In"
+              )}
             </button>
 
-            <div className="mt-4 flex justify-between items-center text-sm">
-              <p className="text-white/80">
-                Don't have an account?{" "}
-                <span
-                  onClick={() => navigate("/signup")}
-                  className="text-blue-400 hover:underline cursor-pointer"
-                >
-                  Sign up
+            {/* Footer Links */}
+            <div className="pt-4 space-y-3">
+              <div className="text-center">
+                <span className="text-white/70 text-sm">
+                  Don't have an account?{" "}
                 </span>
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate("/")}
-                className="text-white/60 hover:text-white text-sm"
-              >
-                Back home
-              </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/signup")}
+                  className="text-white font-semibold hover:underline text-sm"
+                >
+                  Sign up here
+                </button>
+              </div>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => navigate("/")}
+                  className="text-white/60 hover:text-white text-sm transition-colors"
+                >
+                  ← Back to home
+                </button>
+              </div>
             </div>
           </form>
         </div>

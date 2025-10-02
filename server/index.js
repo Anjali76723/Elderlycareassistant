@@ -13,18 +13,25 @@ const authRouter = require("./routes/auth.routes");
 const userRouter = require("./routes/user.routes");
 const emergencyRouter = require("./routes/emergency.routes");
 const assistantRouter = require("./routes/assistant.routes");
-const reminderRouter = require("./routes/reminder.routes"); // <-- mount this
+const reminderRouter = require("./routes/reminder.routes");
+const caregiverRouter = require("./routes/caregiver.routes"); // Add caregiver routes
 
 // services
 const startReminderScheduler = require("./services/reminderScheduler");
 
 const app = express();
 
-// Basic middleware
-app.use(cors({
+// CORS configuration
+const corsOptions = {
   origin: "http://localhost:5173",
-  credentials: true
-}));
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['set-cookie']
+};
+
+// Apply CORS with options (handles preflight OPTIONS requests automatically)
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -41,7 +48,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/emergency", emergencyRouter);
 app.use("/api/assistant", assistantRouter);
-app.use("/api/reminder", reminderRouter); // <-- mounted here
+app.use("/api/reminder", reminderRouter);
+app.use("/api/caregivers", caregiverRouter); // Mount caregiver routes
 
 // simple health check
 app.get("/", (req, res) => res.json({ message: "Server OK" }));

@@ -18,20 +18,21 @@ const getNews = async (req, res) => {
   try {
     const apiKey = process.env.NEWSAPI_KEY;
     if (!apiKey) {
-      console.error("assistant.getNews: NEWSAPI_KEY is not set in .env");
       return res.status(500).json({ message: "NEWSAPI_KEY not configured on server" });
     }
 
-    const pageSize = Math.min(parseInt(req.query.pageSize || "5", 10), 20);
+    const pageSize = Math.min(parseInt(req.query.pageSize || "10", 10), 20);
     const country = req.query.country || process.env.NEWSAPI_COUNTRY || "in";
     const topUrl = "https://newsapi.org/v2/top-headlines";
     const topParams = { apiKey, pageSize, country };
 
     console.log("assistant.getNews: calling top-headlines", { topUrl, topParams });
 
-    let r;
+    // Try to get top headlines first (most reliable for recent news)
+    let r = null;
     try {
       r = await axios.get(topUrl, { params: topParams, timeout: 10000 });
+      console.log("assistant.getNews: top-headlines response status:", r.status, "totalResults:", r.data?.totalResults);
     } catch (err) {
       console.warn("assistant.getNews: top-headlines request failed:", err.response?.data || err.message);
       r = null;
@@ -39,51 +40,143 @@ const getNews = async (req, res) => {
 
     let articles = Array.isArray(r?.data?.articles) ? r.data.articles : [];
 
-    // fallback to everything if no articles
+    // If top-headlines returned nothing, try 'everything' with IST timezone handling
     if (!articles.length) {
       const everythingUrl = "https://newsapi.org/v2/everything";
       const q = req.query.q || "news OR headlines";
-      const everythingParams = { apiKey, q, pageSize, language: "en" };
-      console.log("assistant.getNews: top-headlines empty — falling back to everything", { everythingUrl, everythingParams });
+      
+      // Helper: compute IST time windows
+      const IST_OFFSET_MIN = 5.5 * 60; // IST is UTC+5:30
+      const now = new Date();
+      
+      // Convert current time to IST
+      const istNow = new Date(now.getTime() + IST_OFFSET_MIN * 60 * 1000);
+      const y = istNow.getUTCFullYear();
+      const m = istNow.getUTCMonth();
+      const d = istNow.getUTCDate();
 
+      // Calculate IST midnight in UTC
+      const istOffsetMs = IST_OFFSET_MIN * 60 * 1000;
+      const fromTodayUTC = new Date(Date.UTC(y, m, d, 0, 0, 0) - istOffsetMs);
+      const toTodayUTC = new Date(Date.UTC(y, m, d, 23, 59, 59) - istOffsetMs);
+
+      // First try: today in IST
+      const paramsToday = {
+        apiKey,
+        q,
+        pageSize: pageSize * 2, // Get more articles to have spares
+        language: "en",
+        sortBy: "publishedAt",
+        from: fromTodayUTC.toISOString(),
+        to: toTodayUTC.toISOString()
+      };
+      
+      console.log("assistant.getNews: trying everything endpoint for today");
+      
       try {
-        const r2 = await axios.get(everythingUrl, { params: everythingParams, timeout: 10000 });
-        articles = Array.isArray(r2.data?.articles) ? r2.data.articles : [];
-        console.log("assistant.getNews: fallback returned", articles.length, "articles");
+        const response = await axios.get(everythingUrl, { 
+          params: paramsToday, 
+          timeout: 15000 
+        });
+        
+        const newArticles = Array.isArray(response?.data?.articles) ? response.data.articles : [];
+        console.log("assistant.getNews: everything (today) returned", newArticles.length, "articles");
+        
+        // Add new articles, avoiding duplicates by URL
+        const existingUrls = new Set(articles.map(a => a.url));
+        const uniqueNewArticles = newArticles.filter(a => a.url && !existingUrls.has(a.url));
+        articles = [...articles, ...uniqueNewArticles];
+        
+        if (articles.length >= pageSize) {
+          articles = articles.slice(0, pageSize);
+        }
       } catch (err) {
-        console.error("assistant.getNews: fallback everything failed:", err.response?.data || err.message);
-        articles = [];
+        console.warn("assistant.getNews: everything (today) request failed:", 
+          err.response?.data?.message || err.message);
       }
-    } else {
-      console.log("assistant.getNews: top-headlines returned", articles.length, "articles");
+      
+      // If still not enough articles, try last 48 hours
+      if (articles.length < pageSize) {
+        const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+        const params48h = {
+          apiKey,
+          q,
+          pageSize: pageSize * 2,
+          language: "en",
+          sortBy: "publishedAt",
+          from: since48h
+        };
+        
+        console.log("assistant.getNews: trying everything endpoint (last 48h)");
+        
+        try {
+          const response = await axios.get(everythingUrl, { 
+            params: params48h, 
+            timeout: 15000 
+          });
+          
+          const newArticles = Array.isArray(response?.data?.articles) ? response.data.articles : [];
+          console.log("assistant.getNews: everything (48h) returned", newArticles.length, "articles");
+          
+          // Add new articles, avoiding duplicates by URL
+          const existingUrls = new Set(articles.map(a => a.url));
+          const uniqueNewArticles = newArticles.filter(a => a.url && !existingUrls.has(a.url));
+          articles = [...articles, ...uniqueNewArticles];
+          
+          if (articles.length >= pageSize) {
+            articles = articles.slice(0, pageSize);
+          }
+        } catch (err) {
+          console.warn("assistant.getNews: everything (48h) request failed:", 
+            err.response?.data?.message || err.message);
+        }
+      }
     }
 
+    // Format articles into headlines
     const headlines = (articles || []).map((a) => ({
       title: a.title || "",
       source: (a.source && a.source.name) || "",
       url: a.url || "",
-      publishedAt: a.publishedAt || ""
+      publishedAt: a.publishedAt || new Date().toISOString()
     }));
 
-    if (!headlines.length) {
-      console.warn("assistant.getNews: no articles from NewsAPI; returning local fallback");
-      return res.json({
-        headlines: [
-          {
-            title: "No live headlines — fallback item",
-            source: "Local",
-            url: "",
-            publishedAt: new Date().toISOString()
-          }
-        ]
-      });
-    }
-
-    return res.json({ headlines });
+    return formatAndSendResponse(res, articles);
   } catch (err) {
     console.error("assistant.getNews unexpected error:", err.response?.data || err.message || err);
-    return res.status(500).json({ message: "error fetching news" });
+    return res.status(500).json({ 
+      message: "Error fetching news",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
+};
+
+/**
+ * Helper function to format and send the response
+ */
+const formatAndSendResponse = (res, articles) => {
+  const headlines = (articles || []).map((a) => ({
+    title: a.title || "",
+    source: (a.source && a.source.name) || "",
+    url: a.url || "",
+    publishedAt: a.publishedAt || new Date().toISOString()
+  }));
+
+  if (!headlines.length) {
+    console.warn("assistant.getNews: no articles found; returning fallback");
+    return res.json({
+      headlines: [
+        {
+          title: "Latest news not available at the moment. Please try again later.",
+          source: "System",
+          url: "",
+          publishedAt: new Date().toISOString()
+        }
+      ]
+    });
+  }
+
+  return res.json({ headlines });
 };
 
 

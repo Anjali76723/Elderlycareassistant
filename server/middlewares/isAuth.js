@@ -16,7 +16,7 @@ const isAuth = (req, res, next) => {
     }
 
     const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = verifyToken.userId;
+    req.userId = verifyToken.id; // Token contains 'id', not 'userId'
     next();
   } catch (error) {
     console.error("isAuth error", error);

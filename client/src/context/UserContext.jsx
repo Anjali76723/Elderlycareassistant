@@ -85,6 +85,8 @@ function UserContext({ children }) {
     } catch (e) {
       console.warn("logout error", e);
     }
+    // Clear token from localStorage
+    localStorage.removeItem('token');
     setUserData(null);
     try { if (socket) socket.disconnect(); } catch(e) {}
   };
