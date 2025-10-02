@@ -1,29 +1,29 @@
 // server/index.js
-require("dotenv").config();
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
+require('dotenv').config();
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
-const connectDb = require("./config/connectDb");
+const connectDb = require('./config/connectDb');
 
 // routers
-const authRouter = require("./routes/auth.routes");
-const userRouter = require("./routes/user.routes");
-const emergencyRouter = require("./routes/emergency.routes");
-const assistantRouter = require("./routes/assistant.routes");
-const reminderRouter = require("./routes/reminder.routes");
-const caregiverRouter = require("./routes/caregiver.routes"); // Add caregiver routes
+const authRouter = require('./routes/auth.routes');
+const userRouter = require('./routes/user.routes');
+const emergencyRouter = require('./routes/emergency.routes');
+const assistantRouter = require('./routes/assistant.routes');
+const reminderRouter = require('./routes/reminder.routes');
+const caregiverRouter = require('./routes/caregiver.routes'); // Add caregiver routes
 
 // services
-const startReminderScheduler = require("./services/reminderScheduler");
+const startReminderScheduler = require('./services/reminderScheduler');
 
 const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: ["https://elderlycareassistant.vercel.app/signin","http://localhost:5173"],
+  origin: ["https://elderlycareassistant.vercel.app", "http://localhost:5173"],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -92,20 +92,39 @@ io.on("connection", (socket) => {
 // start server and connect DB
 const PORT = process.env.PORT || 8000;
 
-server.listen(PORT, async () => {
-  console.log(`Server listening on port ${PORT}`);
-  try {
-    await connectDb();
-  } catch (err) {
-    console.error("connectDb error (caught in index):", err && err.message ? err.message : err);
-  }
+const startServer = async (port) => {
+  return new Promise((resolve, reject) => {
+    const serverInstance = server.listen(port)
+      .on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          console.log(`Port ${port} is in use, trying port ${Number(port) + 1}...`);
+          startServer(Number(port) + 1).then(resolve).catch(reject);
+        } else {
+          reject(err);
+        }
+      })
+      .on('listening', async () => {
+        const actualPort = serverInstance.address().port;
+        console.log(`Server listening on port ${actualPort}`);
+        
+        try {
+          await connectDb();
+          // start the reminder scheduler if available (pass io so it can emit)
+          if (startReminderScheduler && typeof startReminderScheduler === "function") {
+            startReminderScheduler(io);
+          }
+          resolve(serverInstance);
+        } catch (err) {
+          console.error("Startup error:", err && err.message ? err.message : err);
+          serverInstance.close();
+          reject(err);
+        }
+      });
+  });
+};
 
-  // start the reminder scheduler if available (pass io so it can emit)
-  try {
-    if (startReminderScheduler && typeof startReminderScheduler === "function") {
-      startReminderScheduler(io);
-    }
-  } catch (err) {
-    console.warn("Could not start reminder scheduler:", err && err.message ? err.message : err);
-  }
+// Start the server
+startServer(PORT).catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });

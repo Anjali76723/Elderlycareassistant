@@ -1,8 +1,8 @@
 // server/services/reminderScheduler.js
-const cron = require("node-cron");
-const Reminder = require("../models/Reminder.js");
-const User = require("../models/user.model.js");
-const twilio = require("twilio");
+const cron = require('node-cron');
+const Reminder = require('../models/Reminder');
+const User = require('../models/user.model');
+const twilio = require('twilio');
 
 let twClient = null;
 if (process.env.TWILIO_SID && process.env.TWILIO_AUTH_TOKEN) {

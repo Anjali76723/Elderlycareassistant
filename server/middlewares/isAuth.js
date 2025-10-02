@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
 const isAuth = (req, res, next) => {
   try {
@@ -19,8 +19,8 @@ const isAuth = (req, res, next) => {
     req.userId = verifyToken.id; // Token contains 'id', not 'userId'
     next();
   } catch (error) {
-    console.error("isAuth error", error);
-    return res.status(401).json({ message: "invalid token" });
+    console.error("Auth error:", error);
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 
