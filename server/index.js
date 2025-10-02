@@ -23,7 +23,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: ["https://elderlycareassistant.vercel.app/signin","http://localhost:5173"],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
