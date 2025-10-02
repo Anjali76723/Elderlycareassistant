@@ -41,7 +41,12 @@ const signUp = async (req, res) => {
 
     // generate token and set cookie
     const token = genToken(created._id);
-    res.cookie("token", token, { httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
+    res.cookie("token", token, { 
+      httpOnly: true, 
+      maxAge: 7 * 24 * 3600 * 1000,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
 
     // remove sensitive fields before returning
     const userSafe = created.toObject();
@@ -73,7 +78,12 @@ const signIn = async (req, res) => {
     if (!match) return res.status(400).json({ message: "invalid credentials" });
 
     const token = genToken(user._id);
-    res.cookie("token", token, { httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
+    res.cookie("token", token, { 
+      httpOnly: true, 
+      maxAge: 7 * 24 * 3600 * 1000,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
 
     const userSafe = user.toObject();
     delete userSafe.password;
@@ -104,7 +114,12 @@ const pinLogin = async (req, res) => {
     if (!match) return res.status(400).json({ message: "invalid pin" });
 
     const token = genToken(user._id);
-    res.cookie("token", token, { httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
+    res.cookie("token", token, { 
+      httpOnly: true, 
+      maxAge: 7 * 24 * 3600 * 1000,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
 
     const userSafe = user.toObject();
     delete userSafe.password;
