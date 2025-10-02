@@ -1,6 +1,7 @@
 // client/src/context/UserContext.jsx
 import React, { createContext, useEffect, useState } from "react";
 import axios from "axios";
+import api from "../utils/axiosConfig";
 import { io } from "socket.io-client";
 
 export const userDataContext = createContext();
@@ -16,7 +17,7 @@ function UserContext({ children }) {
   // fetch current user
   const handleCurrentUser = async () => {
     try {
-      const res = await axios.get(`${serverUrl}/api/user/current`, { withCredentials: true });
+      const res = await api.get('/api/user/current');
       setUserData(res.data);
     } catch (err) {
       console.log("handleCurrentUser error:", err?.response?.data || err.message || err);
@@ -71,7 +72,7 @@ function UserContext({ children }) {
 
   const getGeminiResponse = async (command) => {
     try {
-      const res = await axios.post(`${serverUrl}/api/user/asktoassistant`, { command }, { withCredentials: true });
+      const res = await api.post('/api/user/asktoassistant', { command });
       return res.data;
     } catch (err) {
       console.error("getGeminiResponse error", err?.response?.data || err.message || err);
@@ -81,7 +82,7 @@ function UserContext({ children }) {
   // 🔹 Logout function
   const logout = async () => {
     try {
-      await axios.get(`${serverUrl}/api/auth/logout`, { withCredentials: true });
+      await api.get('/api/auth/logout');
     } catch (e) {
       console.warn("logout error", e);
     }

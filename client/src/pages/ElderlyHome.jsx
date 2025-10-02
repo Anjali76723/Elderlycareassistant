@@ -2,6 +2,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { userDataContext } from "../context/UserContext";
 import axios from "axios";
+import api from "../utils/axiosConfig";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -377,11 +378,8 @@ export default function ElderlyHome() {
       // News
       if (transcript.includes("news") || transcript.includes("headline") || transcript.includes("samachar")) {
         try {
-          console.log("Fetching news from:", `${serverUrl}/api/assistant/news?pageSize=20`);
-          const res = await axios.get(`${serverUrl}/api/assistant/news?pageSize=20`, { 
-            withCredentials: true,
-            timeout: 10000 // 10 second timeout
-          });
+          console.log("Fetching news from:", `/api/assistant/news?pageSize=20`);
+          const res = await api.get('/api/assistant/news?pageSize=20');
           
           console.log("News API response:", res.data);
           
@@ -541,12 +539,12 @@ export default function ElderlyHome() {
           const loc = await getPos();
           let res;
           if (loc) {
-            res = await axios.get(`${serverUrl}/api/assistant/weather?lat=${loc.lat}&lon=${loc.lon}`, { withCredentials: true });
+            res = await api.get(`/api/assistant/weather?lat=${loc.lat}&lon=${loc.lon}`);
           } else {
             const match = transcript.match(/weather in ([a-z\s]+)/);
             const city = match ? match[1].trim() : null;
             const cityParam = city ? `?city=${encodeURIComponent(city)}` : "";
-            res = await axios.get(`${serverUrl}/api/assistant/weather${cityParam}`, { withCredentials: true });
+            res = await api.get(`/api/assistant/weather${cityParam}`);
           }
           const w = res.data;
           setWeatherInfo(w);
@@ -814,7 +812,7 @@ export default function ElderlyHome() {
   // Function to manually refresh news
   const refreshNews = async () => {
     try {
-      const res = await axios.get(`${serverUrl}/api/assistant/news?pageSize=20`, { withCredentials: true });
+      const res = await api.get('/api/assistant/news?pageSize=20');
       let headlines = res.data.headlines || [];
       
       // Filter news from the last 24 hours

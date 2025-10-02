@@ -1,6 +1,7 @@
 // client/src/pages/ElderlyAssistant.jsx
 import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
+import api from "../utils/axiosConfig";
 import { userDataContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
 import CaregiverManagement from "../components/CaregiverManagement";
@@ -79,8 +80,8 @@ export default function ElderlyAssistant() {
   const fetchWeather = async (city) => {
     setStatus("Fetching weather...");
     try {
-      const url = `${serverUrl}/api/assistant/weather` + (city ? `?city=${encodeURIComponent(city)}` : "");
-      const res = await axios.get(url, { withCredentials: true });
+      const url = `/api/assistant/weather` + (city ? `?city=${encodeURIComponent(city)}` : "");
+      const res = await api.get(url);
       const w = res.data.weather;
       setWeather(w);
       setStatus(`Weather for ${w?.city || city}`);
@@ -103,8 +104,8 @@ export default function ElderlyAssistant() {
   const fetchNews = async (pageSize = 5) => {
     setStatus("Fetching news...");
     try {
-      const url = `${serverUrl}/api/assistant/news?pageSize=${pageSize}`;
-      const res = await axios.get(url, { withCredentials: true });
+      const url = `/api/assistant/news?pageSize=${pageSize}`;
+      const res = await api.get(url);
       const items = res.data.headlines || [];
       setHeadlines(items);
       setStatus(`Fetched ${items.length} headlines`);
