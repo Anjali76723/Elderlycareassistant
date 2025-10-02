@@ -23,11 +23,15 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: ["https://elderlycareassistant.vercel.app", "http://localhost:5173"],
+  origin: [ "https://elderlycareassistant.vercel.app",
+    "http://localhost:5173",
+    "https://elderlycareassistant.onrender.com",
+    "http://localhost:8000"],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['set-cookie']
+  exposedHeaders: ['set-cookie'],
+  optionsSuccessStatus: 200  // Some legacy browsers choke on 204
 };
 
 // Apply CORS with options (handles preflight OPTIONS requests automatically)
