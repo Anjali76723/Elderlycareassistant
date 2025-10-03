@@ -1,6 +1,6 @@
 // client/src/pages/SignUp.jsx
 import React, { useEffect, useState, useContext } from "react";
-import axios from "axios";
+import api from "../utils/axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { userDataContext } from "../context/UserContext";
 
@@ -145,10 +145,9 @@ export default function SignUp() {
     setErr("");
     setLoading(true);
     try {
-      const res = await axios.post(
-        `${serverUrl}/api/auth/signup`,
-        { name, email, password, pin, role },
-        { withCredentials: true }
+      const res = await api.post(
+        `/api/auth/signup`,
+        { name, email, password, pin, role }
       );
       setLoading(false);
       // Store token in localStorage for authenticated API requests

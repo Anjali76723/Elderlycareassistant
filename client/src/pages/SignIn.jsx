@@ -1,6 +1,6 @@
 // client/src/pages/SignIn.jsx
 import React, { useEffect, useState, useContext } from "react";
-import axios from "axios";
+import api from "../utils/axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { userDataContext } from "../context/UserContext";
 
@@ -194,16 +194,14 @@ export default function SignIn() {
     try {
       let res;
       if (isElderly) {
-        res = await axios.post(
-          `${serverUrl}/api/auth/pin-login`,
-          { email, pin },
-          { withCredentials: true }
+        res = await api.post(
+          `/api/auth/pin-login`,
+          { email, pin }
         );
       } else {
-        res = await axios.post(
-          `${serverUrl}/api/auth/signin`,
-          { email, password },
-          { withCredentials: true }
+        res = await api.post(
+          `/api/auth/signin`,
+          { email, password }
         );
       }
       setLoading(false);

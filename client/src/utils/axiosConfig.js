@@ -35,10 +35,24 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      console.log('Token expired or invalid, clearing localStorage');
-      localStorage.removeItem('token');
-      // Optionally redirect to login
-      window.location.href = '/signin';
+      const requestUrl = error.config?.url || '';
+      
+      // Don't redirect if this is a login/signup request (these are supposed to fail without token)
+      const isAuthRequest = requestUrl.includes('/auth/signin') || 
+                           requestUrl.includes('/auth/signup') || 
+                           requestUrl.includes('/auth/pin-login');
+      
+      if (!isAuthRequest) {
+        console.log('Token expired or invalid, clearing localStorage and redirecting');
+        localStorage.removeItem('token');
+        
+        // Only redirect if we're not already on the signin page
+        if (!window.location.pathname.includes('/signin')) {
+          window.location.href = '/signin';
+        }
+      } else {
+        console.log('401 on auth request - this is expected for login/signup');
+      }
     }
     return Promise.reject(error);
   }
