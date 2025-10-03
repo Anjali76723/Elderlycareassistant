@@ -686,9 +686,7 @@ export default function ElderlyHome() {
   };
 
   // Handle form submission - SIMPLIFIED VERSION
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     console.log("🔧 FORM SUBMISSION START");
     console.log("🔧 Form data:", formData);
     
@@ -1341,7 +1339,8 @@ export default function ElderlyHome() {
                     
                     <div className="pt-2">
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={handleSubmit}
                         disabled={isLoading}
                         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5"
                       >
