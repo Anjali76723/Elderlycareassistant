@@ -336,13 +336,13 @@ export default function CaregiverReminders() {
           </div>
         </motion.header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Create Reminder */}
           <motion.div 
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
-            className="lg:col-span-2"
+            className="lg:col-span-1"
           >
             <GlassCard>
               <div className="p-6">
@@ -549,7 +549,7 @@ export default function CaregiverReminders() {
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="lg:col-span-3"
+            className="lg:col-span-2"
           >
             <GlassCard className="h-full">
               <div className="p-6">
