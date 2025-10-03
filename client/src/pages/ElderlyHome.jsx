@@ -1211,7 +1211,7 @@ export default function ElderlyHome() {
                     )}
                   </div>
                   
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">Full Name</label>
                       <div className="relative">
