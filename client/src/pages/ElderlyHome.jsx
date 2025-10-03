@@ -1296,22 +1296,39 @@ export default function ElderlyHome() {
                     <div className="pt-2 space-y-2">
                       <button
                         type="button"
-                        onClick={handleAddCaregiver}
+                        onClick={async () => {
+                          try {
+                            // EXACT COPY OF WORKING QUICK TEST LOGIC
+                            const testData = {
+                              name: formData.name || `Form User ${Date.now()}`,
+                              email: formData.email || `formuser${Date.now()}@example.com`,
+                              phone: formData.phone || `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+                              receiveSMS: true,
+                              isPrimary: false
+                            };
+                            console.log("🚀 FORM QUICK TEST:", testData);
+                            const response = await api.post('/api/caregivers', testData);
+                            console.log("✅ FORM QUICK TEST SUCCESS:", response.data);
+                            toast.success('Form quick test worked! API is working!');
+                            
+                            // Clear form
+                            setFormData({
+                              name: '',
+                              email: '',
+                              phone: '',
+                              receiveSMS: true,
+                              isPrimary: false
+                            });
+                            
+                            fetchCaregivers();
+                          } catch (error) {
+                            console.error("❌ FORM QUICK TEST FAILED:", error);
+                            toast.error(`Form quick test failed: ${error.response?.data?.message || error.message}`);
+                          }
+                        }}
                         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                       >
-                        Add Caregiver
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          console.log("🧪 DIRECT TEST BUTTON CLICKED");
-                          console.log("🧪 Form data:", formData);
-                          alert("Button clicked! Check console for form data.");
-                        }}
-                        className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        🧪 Test Button Click
+                        Add Caregiver (Form Quick Test)
                       </button>
                     </div>
                   </form>
