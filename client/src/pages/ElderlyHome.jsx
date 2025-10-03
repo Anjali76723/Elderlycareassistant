@@ -685,83 +685,43 @@ export default function ElderlyHome() {
     });
   };
 
-  // Handle form submission with enhanced debugging
+  // Handle form submission - SIMPLIFIED VERSION
   const handleSubmit = async (e) => {
     e.preventDefault();
-    e.stopPropagation();
     
-    console.log("🔧 === CAREGIVER FORM SUBMISSION START ===");
+    console.log("🔧 FORM SUBMISSION START");
     console.log("🔧 Form data:", formData);
-    console.log("🔧 API Base URL:", api.defaults.baseURL);
-    console.log("🔧 User data:", userData);
     
-    // FORCE SUCCESS TEST - Let's bypass the form and test direct API call
-    const testCaregiver = {
-      name: `Test ${Date.now()}`,
-      email: `test${Date.now()}@example.com`,
-      phone: `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-      receiveSMS: true,
-      isPrimary: false
-    };
-    
-    console.log("🚀 TESTING WITH DIRECT API CALL:", testCaregiver);
-    
-    try {
-      const directResponse = await api.post('/api/caregivers', testCaregiver);
-      console.log("✅ DIRECT API SUCCESS:", directResponse.data);
-      toast.success('Direct API test worked! Now trying your form...');
-    } catch (directError) {
-      console.error("❌ DIRECT API FAILED:", directError);
-      toast.error(`Direct API failed: ${directError.response?.data?.message || directError.message}`);
+    if (isLoading) {
+      console.log("⏳ Already loading, skipping...");
       return;
     }
     
     setIsLoading(true);
     
     try {
-      // Validate required fields
-      if (!formData.name || !formData.email || !formData.phone) {
-        toast.error('Please fill in all required fields (name, email, phone)');
-        setIsLoading(false);
+      // Basic validation
+      if (!formData.name?.trim() || !formData.email?.trim() || !formData.phone?.trim()) {
+        toast.error('Please fill in all required fields');
         return;
       }
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        toast.error('Please enter a valid email address');
-        setIsLoading(false);
-        return;
-      }
-
-      // Validate phone format
-      const phoneRegex = /^\+?\d{8,15}$/;
-      const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, '');
-      if (!phoneRegex.test(cleanPhone)) {
-        toast.error('Please enter a valid phone number (e.g., +919876543210)');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("✅ Form validation passed");
-
-      // Use standard API instance
+      console.log("✅ Validation passed, making API call...");
+      
       if (editingId) {
         console.log("📝 Updating caregiver:", editingId);
-        const response = await api.put(`/api/caregivers/${editingId}`, formData);
-        console.log("✅ Update response:", response.data);
+        await api.put(`/api/caregivers/${editingId}`, formData);
         toast.success('Caregiver updated successfully');
       } else {
         console.log("➕ Adding new caregiver");
-        console.log("📤 Request URL:", `${api.defaults.baseURL}/api/caregivers`);
-        console.log("📤 Request data:", formData);
+        console.log("📤 API URL:", `${api.defaults.baseURL}/api/caregivers`);
         
         const response = await api.post('/api/caregivers', formData);
-        console.log("✅ Caregiver added successfully:", response.data);
+        console.log("✅ SUCCESS:", response.data);
         toast.success('Caregiver added successfully');
       }
       
-      // Reset form and refresh list
+      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -771,33 +731,20 @@ export default function ElderlyHome() {
       });
       setEditingId(null);
       
-      // Refresh the caregiver list
-      await fetchCaregivers();
+      // Refresh list
+      fetchCaregivers();
       
     } catch (error) {
-      console.error('❌ === CAREGIVER SUBMISSION ERROR ===');
-      console.error('❌ Error object:', error);
-      console.error('❌ Error response:', error.response);
-      console.error('❌ Error status:', error.response?.status);
-      console.error('❌ Error data:', error.response?.data);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Request config:', error.config);
+      console.error('❌ ERROR:', error);
+      console.error('❌ Response:', error.response?.data);
       
-      let errorMessage = 'Failed to save caregiver';
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to save caregiver';
+      toast.error(errorMsg);
       
       if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please login again.';
         localStorage.removeItem('token');
         logout();
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.message || 'Invalid data provided';
-      } else if (error.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
-        errorMessage = 'Network error. Please check your connection.';
       }
-      
-      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
