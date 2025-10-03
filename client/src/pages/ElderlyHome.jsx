@@ -2,11 +2,8 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { userDataContext } from "../context/UserContext";
 import api from "../utils/axiosConfig";
-import debugAPI, { debugAPI as testDebugAPI } from "../utils/debugAxios";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import CaregiverDebugger from '../components/CaregiverDebugger';
-import SimpleTest from '../components/SimpleTest';
 
 export default function ElderlyHome() {
   // Get context values
@@ -841,27 +838,6 @@ export default function ElderlyHome() {
     }
   }, [showCaregiverModal]);
 
-  // Debug function to test everything
-  const runCompleteDebug = async () => {
-    console.log('🚀 === RUNNING COMPLETE DEBUG ANALYSIS ===');
-    
-    // Test API connectivity
-    const result = await testDebugAPI();
-    console.log('🚀 Debug API test result:', result);
-    
-    // Test current authentication
-    const token = localStorage.getItem('token');
-    console.log('🚀 Current token:', token ? 'Present' : 'Missing');
-    console.log('🚀 User data:', userData);
-    
-    // Test environment
-    console.log('🚀 Environment variables:');
-    console.log('  - VITE_API_URL:', import.meta.env.VITE_API_URL);
-    console.log('  - NODE_ENV:', import.meta.env.NODE_ENV);
-    console.log('  - MODE:', import.meta.env.MODE);
-    
-    toast.info('Debug analysis complete - check console for details');
-  };
 
   if (!userData) return <div className="p-6">Loading...</div>;
 
@@ -966,15 +942,6 @@ export default function ElderlyHome() {
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 12.094A5.973 5.973 0 004 15v1H1v-1a3 3 0 013.75-2.906z" />
               </svg>
               Caregivers
-            </button>
-            <button
-              onClick={runCompleteDebug}
-              className="px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-2xl text-lg font-bold shadow-xl flex items-center gap-3 transition-all"
-            >
-              <svg className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              Debug API
             </button>
             <button
               onClick={logout}
@@ -1667,9 +1634,6 @@ export default function ElderlyHome() {
         )}
       </div>
       
-      {/* Debug Components - Remove these after testing */}
-      <CaregiverDebugger />
-      <SimpleTest />
     </div>
   );
 }
