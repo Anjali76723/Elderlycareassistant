@@ -6,6 +6,7 @@ import debugAPI, { debugAPI as testDebugAPI } from "../utils/debugAxios";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CaregiverDebugger from '../components/CaregiverDebugger';
+import SimpleTest from '../components/SimpleTest';
 
 export default function ElderlyHome() {
   // Get context values
@@ -1657,8 +1658,9 @@ export default function ElderlyHome() {
         )}
       </div>
       
-      {/* Debug Component - Remove this after testing */}
+      {/* Debug Components - Remove these after testing */}
       <CaregiverDebugger />
+      <SimpleTest />
     </div>
   );
 }
