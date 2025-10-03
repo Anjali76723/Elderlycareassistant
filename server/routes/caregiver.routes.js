@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middlewares/auth.middleware");
+const isAuth = require("../middlewares/isAuth");
 const {
   addCaregiver,
   getCaregivers,
@@ -11,7 +11,7 @@ const {
 } = require("../controllers/caregiver.controllers");
 
 // All routes are protected and require authentication
-router.use(protect);
+router.use(isAuth);
 
 // Get all caregivers for the logged-in elderly user
 router.get("/", getCaregivers);

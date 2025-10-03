@@ -7,11 +7,10 @@ const addCaregiver = async (req, res) => {
   try {
     console.log('\n=== addCaregiver called ===');
     console.log('Request body:', req.body);
-    console.log('Elderly user ID:', req.user._id);
-    console.log('Elderly user email:', req.user.email);
+    console.log('Elderly user ID:', req.userId);
     
     const { name, email, phone, receiveSMS = true, receiveEmail = true, isPrimary = false } = req.body;
-    const elderlyId = req.user._id;
+    const elderlyId = req.userId;
 
     // Validate required fields
     if (!name || !email || !phone) {
@@ -130,7 +129,7 @@ const addCaregiver = async (req, res) => {
 // Get all caregivers for an elderly user
 const getCaregivers = async (req, res) => {
   try {
-    const caregivers = await Caregiver.find({ elderlyId: req.user._id }).sort({ isPrimary: -1, name: 1 });
+    const caregivers = await Caregiver.find({ elderlyId: req.userId }).sort({ isPrimary: -1, name: 1 });
     res.json(caregivers);
   } catch (error) {
     console.error("Error fetching caregivers:", error);
@@ -148,7 +147,7 @@ const updateCaregiver = async (req, res) => {
     if (phone) {
       const cleanedPhone = phone.replace(/[\s\-\(\)]/g, '');
       const existingCaregiverByPhone = await Caregiver.findOne({
-        elderlyId: req.user._id,
+        elderlyId: req.userId,
         _id: { $ne: id }, // Exclude current caregiver
         $or: [
           { phone: phone },
@@ -167,7 +166,7 @@ const updateCaregiver = async (req, res) => {
     // Check if email is being updated and if it's already used by another caregiver
     if (email) {
       const existingCaregiverByEmail = await Caregiver.findOne({
-        elderlyId: req.user._id,
+        elderlyId: req.userId,
         _id: { $ne: id }, // Exclude current caregiver
         email: email.toLowerCase()
       });
@@ -191,14 +190,14 @@ const updateCaregiver = async (req, res) => {
     if (isPrimary) {
       // Unset existing primary
       await Caregiver.updateOne(
-        { elderlyId: req.user._id, isPrimary: true },
+        { elderlyId: req.userId, isPrimary: true },
         { $set: { isPrimary: false } }
       );
       updates.isPrimary = true;
     }
 
     const updatedCaregiver = await Caregiver.findOneAndUpdate(
-      { _id: id, elderlyId: req.user._id },
+      { _id: id, elderlyId: req.userId },
       { $set: updates },
       { new: true }
     );
@@ -228,7 +227,7 @@ const deleteCaregiver = async (req, res) => {
     
     const deletedCaregiver = await Caregiver.findOneAndDelete({
       _id: id,
-      elderlyId: req.user._id
+      elderlyId: req.userId
     });
 
     if (!deletedCaregiver) {
@@ -237,7 +236,7 @@ const deleteCaregiver = async (req, res) => {
 
     // Remove from user's caregivers array
     await User.findByIdAndUpdate(
-      req.user._id,
+      req.userId,
       { $pull: { caregivers: id } }
     );
 
@@ -254,7 +253,7 @@ const sendTestSMS = async (req, res) => {
     const { id } = req.params;
     const caregiver = await Caregiver.findOne({
       _id: id,
-      elderlyId: req.user._id,
+      elderlyId: req.userId,
       receiveSMS: true
     });
 
@@ -262,7 +261,7 @@ const sendTestSMS = async (req, res) => {
       return res.status(404).json({ message: "Caregiver not found or SMS not enabled" });
     }
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.userId);
     const message = `Test message from Vocamate: This is a test SMS from ${user.name}'s emergency contact system.`;
     
     await sendSMS(caregiver.phone, message);
@@ -277,7 +276,7 @@ const sendTestSMS = async (req, res) => {
 // Send alert to all caregivers
 const sendAlert = async (req, res) => {
   try {
-    const elderlyId = req.user._id;
+    const elderlyId = req.userId;
     const { message = 'Help! I need assistance!' } = req.body;
 
     // Get all caregivers for this elderly user
@@ -292,7 +291,8 @@ const sendAlert = async (req, res) => {
 
     // Send alerts to all caregivers who should receive them
     const alertPromises = caregivers.map(async (caregiver) => {
-      const alertMessage = `🚨 SOS ALERT! ${req.user.name || 'Elderly User'} needs help: ${message}. Please respond immediately.`;
+      const user = await User.findById(req.userId);
+      const alertMessage = `🚨 SOS ALERT! ${user?.name || 'Elderly User'} needs help: ${message}. Please respond immediately.`;
 
       try {
         if (caregiver.receiveSMS) {
