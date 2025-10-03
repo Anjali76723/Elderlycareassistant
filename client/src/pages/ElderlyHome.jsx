@@ -865,34 +865,7 @@ export default function ElderlyHome() {
               </svg>
               Caregivers
             </button>
-            <button
-              onClick={async () => {
-                try {
-                  const testData = {
-                    name: `Quick Test ${Date.now()}`,
-                    email: `quicktest${Date.now()}@example.com`,
-                    phone: `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-                    receiveSMS: true,
-                    isPrimary: false
-                  };
-                  console.log("🚀 QUICK TEST:", testData);
-                  const response = await api.post('/api/caregivers', testData);
-                  console.log("✅ QUICK TEST SUCCESS:", response.data);
-                  toast.success('Quick test worked! API is working!');
-                  fetchCaregivers();
-                } catch (error) {
-                  console.error("❌ QUICK TEST FAILED:", error);
-                  toast.error(`Quick test failed: ${error.response?.data?.message || error.message}`);
-                }
-              }}
-              className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-lg font-bold shadow-xl flex items-center gap-3 transition-all"
-            >
-              <svg className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Quick Test
-            </button>
-            <button
+<button
               onClick={logout}
               className="px-6 py-4 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-2xl text-lg font-bold shadow-xl flex items-center gap-3 transition-all"
             >
