@@ -2,6 +2,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { userDataContext } from "../context/UserContext";
 import api from "../utils/axiosConfig";
+import debugAPI, { debugAPI as testDebugAPI } from "../utils/debugAxios";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CaregiverDebugger from '../components/CaregiverDebugger';
@@ -636,31 +637,39 @@ export default function ElderlyHome() {
     speakText(`Test reminder: ${testReminderData.message}`, "en-IN");
   };
 
-  // Fetch caregivers
+  // Fetch caregivers with enhanced debugging
   const fetchCaregivers = async () => {
     try {
-      console.log("📥 Fetching caregivers...");
+      console.log("📥 === FETCHING CAREGIVERS START ===");
+      console.log("📥 API Base URL:", debugAPI.defaults.baseURL);
+      console.log("📥 User ID:", userData?._id);
       setIsLoading(true);
       
-      const response = await api.get('/api/caregivers');
-      console.log("✅ Caregivers fetched:", response.data);
+      const response = await debugAPI.get('/api/caregivers');
+      console.log("✅ Caregivers fetch response:", response);
+      console.log("✅ Caregivers data:", response.data);
       
       if (response.data && Array.isArray(response.data)) {
         setCaregivers(response.data);
         console.log("✅ Caregivers set in state:", response.data.length, "caregivers");
+        console.log("✅ Caregiver details:", response.data.map(c => ({ id: c._id, name: c.name, email: c.email })));
       } else {
         console.error('❌ Unexpected response format:', response.data);
         toast.error('Error loading caregivers. Please try again.');
       }
     } catch (error) {
-      console.error('❌ Error fetching caregivers:', error);
-      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ === FETCH CAREGIVERS ERROR ===');
+      console.error('❌ Error object:', error);
+      console.error('❌ Error response:', error.response);
       console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
       
       if (error.response?.status === 401) {
         toast.error('Session expired. Please log in again.');
         localStorage.removeItem('token');
         logout();
+      } else if (error.code === 'NETWORK_ERROR') {
+        toast.error('Network error. Please check your connection.');
       } else {
         toast.error(error.response?.data?.message || 'Failed to load caregivers');
       }
@@ -678,10 +687,13 @@ export default function ElderlyHome() {
     });
   };
 
-  // Handle form submission
+  // Handle form submission with enhanced debugging
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("🔧 Submitting caregiver form:", formData);
+    console.log("🔧 === CAREGIVER FORM SUBMISSION START ===");
+    console.log("🔧 Form data:", formData);
+    console.log("🔧 Environment:", import.meta.env.VITE_API_URL);
+    console.log("🔧 User data:", userData);
     
     try {
       // Validate required fields
@@ -705,14 +717,20 @@ export default function ElderlyHome() {
         return;
       }
 
+      console.log("✅ Form validation passed");
+
+      // Use debug API for better error tracking
       if (editingId) {
         console.log("📝 Updating caregiver:", editingId);
-        await api.put(`/api/caregivers/${editingId}`, formData);
+        const response = await debugAPI.put(`/api/caregivers/${editingId}`, formData);
+        console.log("✅ Update response:", response.data);
         toast.success('Caregiver updated successfully');
       } else {
-        console.log("➕ Adding new caregiver");
+        console.log("➕ Adding new caregiver with debugAPI");
+        console.log("📤 Request URL:", `${debugAPI.defaults.baseURL}/api/caregivers`);
         console.log("📤 Request data:", formData);
-        const response = await api.post('/api/caregivers', formData);
+        
+        const response = await debugAPI.post('/api/caregivers', formData);
         console.log("✅ Caregiver added successfully:", response.data);
         toast.success('Caregiver added successfully');
       }
@@ -726,16 +744,33 @@ export default function ElderlyHome() {
         isPrimary: false
       });
       setEditingId(null);
-      fetchCaregivers();
+      
+      // Refresh the caregiver list
+      await fetchCaregivers();
       
     } catch (error) {
-      console.error('❌ Error saving caregiver:', error);
-      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ === CAREGIVER SUBMISSION ERROR ===');
+      console.error('❌ Error object:', error);
+      console.error('❌ Error response:', error.response);
       console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Request config:', error.config);
       
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Failed to save caregiver';
+      let errorMessage = 'Failed to save caregiver';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please login again.';
+        localStorage.removeItem('token');
+        logout();
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'Invalid data provided';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
       toast.error(errorMessage);
     }
   };
@@ -795,6 +830,28 @@ export default function ElderlyHome() {
       fetchCaregivers();
     }
   }, [showCaregiverModal]);
+
+  // Debug function to test everything
+  const runCompleteDebug = async () => {
+    console.log('🚀 === RUNNING COMPLETE DEBUG ANALYSIS ===');
+    
+    // Test API connectivity
+    const result = await testDebugAPI();
+    console.log('🚀 Debug API test result:', result);
+    
+    // Test current authentication
+    const token = localStorage.getItem('token');
+    console.log('🚀 Current token:', token ? 'Present' : 'Missing');
+    console.log('🚀 User data:', userData);
+    
+    // Test environment
+    console.log('🚀 Environment variables:');
+    console.log('  - VITE_API_URL:', import.meta.env.VITE_API_URL);
+    console.log('  - NODE_ENV:', import.meta.env.NODE_ENV);
+    console.log('  - MODE:', import.meta.env.MODE);
+    
+    toast.info('Debug analysis complete - check console for details');
+  };
 
   if (!userData) return <div className="p-6">Loading...</div>;
 
@@ -899,6 +956,15 @@ export default function ElderlyHome() {
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 12.094A5.973 5.973 0 004 15v1H1v-1a3 3 0 013.75-2.906z" />
               </svg>
               Caregivers
+            </button>
+            <button
+              onClick={runCompleteDebug}
+              className="px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-2xl text-lg font-bold shadow-xl flex items-center gap-3 transition-all"
+            >
+              <svg className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Debug API
             </button>
             <button
               onClick={logout}
