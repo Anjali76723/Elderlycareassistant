@@ -642,11 +642,11 @@ export default function ElderlyHome() {
   const fetchCaregivers = async () => {
     try {
       console.log("📥 === FETCHING CAREGIVERS START ===");
-      console.log("📥 API Base URL:", debugAPI.defaults.baseURL);
+      console.log("📥 API Base URL:", api.defaults.baseURL);
       console.log("📥 User ID:", userData?._id);
       setIsLoading(true);
       
-      const response = await debugAPI.get('/api/caregivers');
+      const response = await api.get('/api/caregivers');
       console.log("✅ Caregivers fetch response:", response);
       console.log("✅ Caregivers data:", response.data);
       
@@ -691,15 +691,20 @@ export default function ElderlyHome() {
   // Handle form submission with enhanced debugging
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     console.log("🔧 === CAREGIVER FORM SUBMISSION START ===");
     console.log("🔧 Form data:", formData);
-    console.log("🔧 Environment:", import.meta.env.VITE_API_URL);
+    console.log("🔧 API Base URL:", api.defaults.baseURL);
     console.log("🔧 User data:", userData);
+    
+    setIsLoading(true);
     
     try {
       // Validate required fields
       if (!formData.name || !formData.email || !formData.phone) {
         toast.error('Please fill in all required fields (name, email, phone)');
+        setIsLoading(false);
         return;
       }
 
@@ -707,6 +712,7 @@ export default function ElderlyHome() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         toast.error('Please enter a valid email address');
+        setIsLoading(false);
         return;
       }
 
@@ -715,23 +721,24 @@ export default function ElderlyHome() {
       const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, '');
       if (!phoneRegex.test(cleanPhone)) {
         toast.error('Please enter a valid phone number (e.g., +919876543210)');
+        setIsLoading(false);
         return;
       }
 
       console.log("✅ Form validation passed");
 
-      // Use debug API for better error tracking
+      // Use standard API instance
       if (editingId) {
         console.log("📝 Updating caregiver:", editingId);
-        const response = await debugAPI.put(`/api/caregivers/${editingId}`, formData);
+        const response = await api.put(`/api/caregivers/${editingId}`, formData);
         console.log("✅ Update response:", response.data);
         toast.success('Caregiver updated successfully');
       } else {
-        console.log("➕ Adding new caregiver with debugAPI");
-        console.log("📤 Request URL:", `${debugAPI.defaults.baseURL}/api/caregivers`);
+        console.log("➕ Adding new caregiver");
+        console.log("📤 Request URL:", `${api.defaults.baseURL}/api/caregivers`);
         console.log("📤 Request data:", formData);
         
-        const response = await debugAPI.post('/api/caregivers', formData);
+        const response = await api.post('/api/caregivers', formData);
         console.log("✅ Caregiver added successfully:", response.data);
         toast.success('Caregiver added successfully');
       }
@@ -773,6 +780,8 @@ export default function ElderlyHome() {
       }
       
       toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 

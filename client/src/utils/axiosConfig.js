@@ -3,9 +3,12 @@ import axios from 'axios';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  baseURL: "https://elderlycareassistant.onrender.com", // Direct URL to ensure it works
   withCredentials: true, // Keep this for cookie support
-  timeout: 10000
+  timeout: 15000, // Increased timeout for production
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
 // Request interceptor to add Authorization header
