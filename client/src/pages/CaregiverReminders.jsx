@@ -163,13 +163,14 @@ export default function CaregiverReminders() {
   const handleCreate = async (e) => {
     e.preventDefault();
     setErr("");
-    if (!elderlyEmail || !message || !time) {
+    if (!elderlyEmail || !message || !selectedDate) {
       setErr("Please fill all fields.");
       return;
     }
     try {
       setLoading(true);
-      // Keep the same payload shape as original API expects:
+      // Convert selectedDate to ISO string for API
+      const time = selectedDate.toISOString();
       await axios.post(
         `${serverUrl}/api/reminder/create`,
         { elderlyEmail, message, time, repeat },
@@ -178,7 +179,7 @@ export default function CaregiverReminders() {
       setLoading(false);
       setElderlyEmail("");
       setMessage("");
-      setTime("");
+      setSelectedDate(new Date());
       setRepeat("none");
       fetchReminders();
     } catch (error) {
@@ -395,7 +396,13 @@ export default function CaregiverReminders() {
                     </div>
                     
                     <div className="w-full">
-                      <label className="block text-sm text-cyan-100/80 font-medium mb-2">Date & Time</label>
+                      <label className="block text-sm text-cyan-100/80 font-medium mb-1">Date & Time</label>
+                      <p className="text-xs text-cyan-100/60 mb-2">
+                        Select exact date and time (minute precision) • 
+                        <span className="text-cyan-300 font-medium">
+                          {selectedDate.toLocaleString()}
+                        </span>
+                      </p>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <svg className="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -407,18 +414,26 @@ export default function CaregiverReminders() {
                           onChange={(date) => setSelectedDate(date)}
                           showTimeSelect
                           timeFormat="HH:mm"
-                          timeIntervals={15}
+                          timeIntervals={1}
+                          timeCaption="Time"
                           dateFormat="MMMM d, yyyy h:mm aa"
-                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent cursor-pointer"
+                          minDate={new Date()}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent cursor-pointer"
                           calendarClassName="bg-gray-800 border border-white/10 rounded-xl overflow-hidden shadow-2xl"
-                          timeClassName={() => "text-white hover:bg-cyan-500/20"}
-                          dayClassName={(date) => 
-                            date.getDate() === selectedDate.getDate() && 
-                            date.getMonth() === selectedDate.getMonth() && 
-                            date.getFullYear() === selectedDate.getFullYear() 
-                              ? 'bg-cyan-500 text-white rounded-full' 
-                              : 'text-white hover:bg-white/10 rounded-full'
-                          }
+                          timeClassName={() => "text-white hover:bg-cyan-500/20 transition-colors"}
+                          dayClassName={(date) => {
+                            const today = new Date();
+                            const isToday = date.getDate() === today.getDate() && 
+                                          date.getMonth() === today.getMonth() && 
+                                          date.getFullYear() === today.getFullYear();
+                            const isSelected = date.getDate() === selectedDate.getDate() && 
+                                             date.getMonth() === selectedDate.getMonth() && 
+                                             date.getFullYear() === selectedDate.getFullYear();
+                            
+                            if (isSelected) return 'bg-cyan-500 text-white rounded-full';
+                            if (isToday) return 'bg-cyan-500/30 text-cyan-200 rounded-full';
+                            return 'text-white hover:bg-white/10 rounded-full transition-colors';
+                          }}
                           renderCustomHeader={({
                             date,
                             decreaseMonth,
@@ -426,25 +441,33 @@ export default function CaregiverReminders() {
                             prevMonthButtonDisabled,
                             nextMonthButtonDisabled,
                           }) => (
-                            <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-white/10">
                               <button
                                 onClick={decreaseMonth}
                                 disabled={prevMonthButtonDisabled}
                                 type="button"
-                                className={`p-1 rounded-full ${prevMonthButtonDisabled ? 'text-gray-500' : 'text-white hover:bg-white/10'}`}
+                                className={`p-2 rounded-full transition-colors ${
+                                  prevMonthButtonDisabled 
+                                    ? 'text-gray-500 cursor-not-allowed' 
+                                    : 'text-white hover:bg-white/10'
+                                }`}
                               >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
                               </button>
-                              <div className="text-white font-medium">
+                              <div className="text-white font-semibold text-lg">
                                 {format(date, 'MMMM yyyy')}
                               </div>
                               <button
                                 onClick={increaseMonth}
                                 disabled={nextMonthButtonDisabled}
                                 type="button"
-                                className={`p-1 rounded-full ${nextMonthButtonDisabled ? 'text-gray-500' : 'text-white hover:bg-white/10'}`}
+                                className={`p-2 rounded-full transition-colors ${
+                                  nextMonthButtonDisabled 
+                                    ? 'text-gray-500 cursor-not-allowed' 
+                                    : 'text-white hover:bg-white/10'
+                                }`}
                               >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -701,6 +724,149 @@ export default function CaregiverReminders() {
           0% { transform: translateY(0) rotate(0deg); opacity: 0; }
           10% { opacity: 0.5; }
           100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+        
+        /* Enhanced DatePicker Styling */
+        .react-datepicker {
+          background: rgba(31, 41, 55, 0.95) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 12px !important;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+          backdrop-filter: blur(16px) !important;
+          font-family: inherit !important;
+        }
+        
+        .react-datepicker__header {
+          background: rgba(31, 41, 55, 0.8) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 12px 12px 0 0 !important;
+        }
+        
+        .react-datepicker__current-month {
+          color: white !important;
+          font-weight: 600 !important;
+          font-size: 1.1rem !important;
+        }
+        
+        .react-datepicker__day-names {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+          margin-bottom: 8px !important;
+        }
+        
+        .react-datepicker__day-name {
+          color: rgba(6, 182, 212, 0.8) !important;
+          font-weight: 500 !important;
+          font-size: 0.875rem !important;
+        }
+        
+        .react-datepicker__month {
+          margin: 0.8rem !important;
+        }
+        
+        .react-datepicker__day {
+          color: white !important;
+          border-radius: 8px !important;
+          transition: all 0.2s ease !important;
+          margin: 2px !important;
+          width: 2rem !important;
+          height: 2rem !important;
+          line-height: 2rem !important;
+        }
+        
+        .react-datepicker__day:hover {
+          background: rgba(6, 182, 212, 0.2) !important;
+          color: white !important;
+        }
+        
+        .react-datepicker__day--selected {
+          background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+          color: white !important;
+          font-weight: 600 !important;
+        }
+        
+        .react-datepicker__day--today {
+          background: rgba(6, 182, 212, 0.3) !important;
+          color: #67e8f9 !important;
+          font-weight: 500 !important;
+        }
+        
+        .react-datepicker__day--disabled {
+          color: rgba(255, 255, 255, 0.3) !important;
+          cursor: not-allowed !important;
+        }
+        
+        .react-datepicker__time-container {
+          border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: rgba(31, 41, 55, 0.95) !important;
+        }
+        
+        .react-datepicker__time {
+          background: transparent !important;
+        }
+        
+        .react-datepicker__header--time {
+          background: rgba(31, 41, 55, 0.8) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .react-datepicker__time-caption {
+          color: white !important;
+          font-weight: 600 !important;
+        }
+        
+        .react-datepicker__time-list {
+          background: rgba(31, 41, 55, 0.95) !important;
+          scrollbar-width: thin !important;
+          scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+        }
+        
+        .react-datepicker__time-list::-webkit-scrollbar {
+          width: 6px !important;
+        }
+        
+        .react-datepicker__time-list::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05) !important;
+          border-radius: 3px !important;
+        }
+        
+        .react-datepicker__time-list::-webkit-scrollbar-thumb {
+          background: rgba(6, 182, 212, 0.5) !important;
+          border-radius: 3px !important;
+        }
+        
+        .react-datepicker__time-list::-webkit-scrollbar-thumb:hover {
+          background: rgba(6, 182, 212, 0.7) !important;
+        }
+        
+        .react-datepicker__time-list-item {
+          color: white !important;
+          padding: 8px 12px !important;
+          transition: all 0.2s ease !important;
+          border-radius: 6px !important;
+          margin: 2px 4px !important;
+        }
+        
+        .react-datepicker__time-list-item:hover {
+          background: rgba(6, 182, 212, 0.2) !important;
+          color: white !important;
+        }
+        
+        .react-datepicker__time-list-item--selected {
+          background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+          color: white !important;
+          font-weight: 600 !important;
+        }
+        
+        .react-datepicker__navigation {
+          top: 16px !important;
+        }
+        
+        .react-datepicker__navigation--previous {
+          left: 16px !important;
+        }
+        
+        .react-datepicker__navigation--next {
+          right: 16px !important;
         }
         
         /* Input styling */
