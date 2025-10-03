@@ -636,28 +636,29 @@ export default function ElderlyHome() {
     speakText(`Test reminder: ${testReminderData.message}`, "en-IN");
   };
 
-  // Fetch caregivers with token
+  // Fetch caregivers
   const fetchCaregivers = async () => {
     try {
+      console.log("📥 Fetching caregivers...");
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await api.get('/api/caregivers', { withCredentials: true });
+      
+      const response = await api.get('/api/caregivers');
+      console.log("✅ Caregivers fetched:", response.data);
       
       if (response.data && Array.isArray(response.data)) {
         setCaregivers(response.data);
+        console.log("✅ Caregivers set in state:", response.data.length, "caregivers");
       } else {
-        console.error('Unexpected response format:', response.data);
+        console.error('❌ Unexpected response format:', response.data);
         toast.error('Error loading caregivers. Please try again.');
       }
     } catch (error) {
-      console.error('Error fetching caregivers:', error);
-      if (error.response?.status === 401 || error.message === 'No authentication token found') {
+      console.error('❌ Error fetching caregivers:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      
+      if (error.response?.status === 401) {
         toast.error('Session expired. Please log in again.');
-        // Clear any invalid token
         localStorage.removeItem('token');
         logout();
       } else {
@@ -680,25 +681,39 @@ export default function ElderlyHome() {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🔧 Submitting caregiver form:", formData);
+    
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
+      // Validate required fields
+      if (!formData.name || !formData.email || !formData.phone) {
+        toast.error('Please fill in all required fields (name, email, phone)');
+        return;
       }
 
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        withCredentials: true
-      };
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+
+      // Validate phone format
+      const phoneRegex = /^\+?\d{8,15}$/;
+      const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, '');
+      if (!phoneRegex.test(cleanPhone)) {
+        toast.error('Please enter a valid phone number (e.g., +919876543210)');
+        return;
+      }
 
       if (editingId) {
+        console.log("📝 Updating caregiver:", editingId);
         await api.put(`/api/caregivers/${editingId}`, formData);
         toast.success('Caregiver updated successfully');
       } else {
-        await api.post('/api/caregivers', formData);
+        console.log("➕ Adding new caregiver");
+        console.log("📤 Request data:", formData);
+        const response = await api.post('/api/caregivers', formData);
+        console.log("✅ Caregiver added successfully:", response.data);
         toast.success('Caregiver added successfully');
       }
       
@@ -712,9 +727,16 @@ export default function ElderlyHome() {
       });
       setEditingId(null);
       fetchCaregivers();
+      
     } catch (error) {
-      console.error('Error saving caregiver:', error);
-      toast.error(error.response?.data?.message || 'Failed to save caregiver');
+      console.error('❌ Error saving caregiver:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Failed to save caregiver';
+      toast.error(errorMessage);
     }
   };
 
@@ -734,17 +756,13 @@ export default function ElderlyHome() {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to remove this caregiver?')) {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
-
+        console.log("🗑️ Deleting caregiver:", id);
         await api.delete(`/api/caregivers/${id}`);
         toast.success('Caregiver removed successfully');
         fetchCaregivers();
       } catch (error) {
-        console.error('Error deleting caregiver:', error);
-        if (error.response?.status === 401 || error.message === 'No authentication token found') {
+        console.error('❌ Error deleting caregiver:', error);
+        if (error.response?.status === 401) {
           toast.error('Session expired. Please log in again.');
           logout();
         } else {
@@ -757,16 +775,12 @@ export default function ElderlyHome() {
   // Send test SMS
   const sendTestSMS = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
+      console.log("📱 Sending test SMS to caregiver:", id);
       await api.post(`/api/caregivers/${id}/test-sms`, {});
       toast.success('Test SMS sent successfully');
     } catch (error) {
-      console.error('Error sending test SMS:', error);
-      if (error.response?.status === 401 || error.message === 'No authentication token found') {
+      console.error('❌ Error sending test SMS:', error);
+      if (error.response?.status === 401) {
         toast.error('Session expired. Please log in again.');
         logout();
       } else {
