@@ -1,6 +1,6 @@
 // client/src/pages/CaregiverReminders.jsx
 import React, { useContext, useEffect, useState, useRef } from "react";
-import axios from "axios";
+import api from "../utils/axiosConfig";
 import { userDataContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -152,9 +152,7 @@ export default function CaregiverReminders() {
 
   const fetchReminders = async () => {
     try {
-      const res = await axios.get(`${serverUrl}/api/reminder/caregiver`, {
-        withCredentials: true,
-      });
+      const res = await api.get(`/api/reminder/caregiver`);
       setReminders(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("fetchReminders error", error);
@@ -182,10 +180,9 @@ export default function CaregiverReminders() {
       console.log("Sending request to:", `${serverUrl}/api/reminder/create`);
       console.log("Request payload:", { elderlyEmail, message, time, repeat });
       
-      const response = await axios.post(
-        `${serverUrl}/api/reminder/create`,
-        { elderlyEmail, message, time, repeat },
-        { withCredentials: true }
+      const response = await api.post(
+        `/api/reminder/create`,
+        { elderlyEmail, message, time, repeat }
       );
       
       console.log("Reminder created successfully:", response.data);
