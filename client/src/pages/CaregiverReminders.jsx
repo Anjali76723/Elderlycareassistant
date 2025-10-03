@@ -422,11 +422,20 @@ export default function CaregiverReminders() {
                                 name: "preventOverflow",
                                 options: {
                                   rootBoundary: "viewport",
+                                  tether: false,
+                                  altAxis: true,
+                                },
+                              },
+                              {
+                                name: "flip",
+                                options: {
+                                  fallbackPlacements: ["bottom", "top", "right", "left"],
                                 },
                               },
                             ],
                           }}
-                          popperClassName="z-[9999]"
+                          popperClassName="!z-[10000]"
+                          withPortal
                           dayClassName={(date) => {
                             const today = new Date();
                             const isToday = date.getDate() === today.getDate() && 
@@ -733,22 +742,46 @@ export default function CaregiverReminders() {
         }
         
         /* Enhanced DatePicker Styling */
-        .react-datepicker {
-          background: rgba(31, 41, 55, 0.95) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          border-radius: 12px !important;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-          backdrop-filter: blur(16px) !important;
-          font-family: inherit !important;
-          z-index: 9999 !important;
+        .react-datepicker-wrapper {
+          z-index: 10000 !important;
         }
         
         .react-datepicker-popper {
-          z-index: 9999 !important;
+          z-index: 10000 !important;
+          position: fixed !important;
         }
         
         .react-datepicker__tab-loop {
-          z-index: 9999 !important;
+          z-index: 10000 !important;
+        }
+        
+        .react-datepicker__portal {
+          z-index: 10000 !important;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: rgba(0, 0, 0, 0.3) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        
+        .react-datepicker__portal .react-datepicker {
+          position: relative !important;
+          transform: none !important;
+        }
+        
+        .react-datepicker {
+          background: rgba(31, 41, 55, 0.98) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 12px !important;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+          backdrop-filter: blur(20px) !important;
+          font-family: inherit !important;
+          z-index: 10000 !important;
+          position: relative !important;
         }
         
         .react-datepicker__header {
