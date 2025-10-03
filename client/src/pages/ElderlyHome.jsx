@@ -635,44 +635,24 @@ export default function ElderlyHome() {
     speakText(`Test reminder: ${testReminderData.message}`, "en-IN");
   };
 
-  // Fetch caregivers with enhanced debugging
+  // CLEAN FETCH CAREGIVERS LOGIC
   const fetchCaregivers = async () => {
     try {
-      console.log("📥 === FETCHING CAREGIVERS START ===");
-      console.log("📥 API Base URL:", api.defaults.baseURL);
-      console.log("📥 User ID:", userData?._id);
-      setIsLoading(true);
+      console.log("📥 Fetching caregivers...");
       
       const response = await api.get('/api/caregivers');
-      console.log("✅ Caregivers fetch response:", response);
-      console.log("✅ Caregivers data:", response.data);
+      console.log("✅ Got caregivers:", response.data);
       
-      if (response.data && Array.isArray(response.data)) {
+      if (Array.isArray(response.data)) {
         setCaregivers(response.data);
-        console.log("✅ Caregivers set in state:", response.data.length, "caregivers");
-        console.log("✅ Caregiver details:", response.data.map(c => ({ id: c._id, name: c.name, email: c.email })));
+        console.log(`✅ Updated UI with ${response.data.length} caregivers`);
       } else {
-        console.error('❌ Unexpected response format:', response.data);
-        toast.error('Error loading caregivers. Please try again.');
+        console.error('❌ Invalid response format');
+        toast.error('Error loading caregivers');
       }
     } catch (error) {
-      console.error('❌ === FETCH CAREGIVERS ERROR ===');
-      console.error('❌ Error object:', error);
-      console.error('❌ Error response:', error.response);
-      console.error('❌ Error status:', error.response?.status);
-      console.error('❌ Error data:', error.response?.data);
-      
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please log in again.');
-        localStorage.removeItem('token');
-        logout();
-      } else if (error.code === 'NETWORK_ERROR') {
-        toast.error('Network error. Please check your connection.');
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to load caregivers');
-      }
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Fetch error:', error);
+      toast.error('Failed to load caregivers');
     }
   };
 
@@ -685,41 +665,39 @@ export default function ElderlyHome() {
     });
   };
 
-  // Handle form submission - SIMPLIFIED VERSION
-  const handleSubmit = async () => {
-    console.log("🔧 FORM SUBMISSION START");
-    console.log("🔧 Form data:", formData);
+  // CLEAN CAREGIVER SUBMISSION LOGIC
+  const handleAddCaregiver = async () => {
+    console.log("🚀 ADD CAREGIVER CLICKED");
     
-    if (isLoading) {
-      console.log("⏳ Already loading, skipping...");
+    // Prevent double clicks
+    if (isLoading) return;
+    
+    // Validate form data
+    if (!formData.name || !formData.email || !formData.phone) {
+      toast.error('Please fill all required fields');
       return;
     }
     
     setIsLoading(true);
     
     try {
-      // Basic validation
-      if (!formData.name?.trim() || !formData.email?.trim() || !formData.phone?.trim()) {
-        toast.error('Please fill in all required fields');
-        return;
-      }
-
-      console.log("✅ Validation passed, making API call...");
+      console.log("📤 Sending data:", formData);
       
-      if (editingId) {
-        console.log("📝 Updating caregiver:", editingId);
-        await api.put(`/api/caregivers/${editingId}`, formData);
-        toast.success('Caregiver updated successfully');
-      } else {
-        console.log("➕ Adding new caregiver");
-        console.log("📤 API URL:", `${api.defaults.baseURL}/api/caregivers`);
-        
-        const response = await api.post('/api/caregivers', formData);
-        console.log("✅ SUCCESS:", response.data);
-        toast.success('Caregiver added successfully');
-      }
+      // Make API call
+      const response = await api.post('/api/caregivers', {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        receiveSMS: formData.receiveSMS || true,
+        isPrimary: formData.isPrimary || false
+      });
       
-      // Reset form
+      console.log("✅ API Response:", response.data);
+      
+      // Show success message
+      toast.success('Caregiver added successfully!');
+      
+      // Clear form
       setFormData({
         name: '',
         email: '',
@@ -727,22 +705,21 @@ export default function ElderlyHome() {
         receiveSMS: true,
         isPrimary: false
       });
-      setEditingId(null);
       
-      // Refresh list
-      fetchCaregivers();
+      // Refresh caregiver list
+      await fetchCaregivers();
       
     } catch (error) {
-      console.error('❌ ERROR:', error);
-      console.error('❌ Response:', error.response?.data);
+      console.error("❌ Add caregiver error:", error);
       
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to save caregiver';
-      toast.error(errorMsg);
-      
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        logout();
+      let errorMessage = 'Failed to add caregiver';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -1340,7 +1317,7 @@ export default function ElderlyHome() {
                     <div className="pt-2">
                       <button
                         type="button"
-                        onClick={handleSubmit}
+                        onClick={handleAddCaregiver}
                         disabled={isLoading}
                         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5"
                       >
