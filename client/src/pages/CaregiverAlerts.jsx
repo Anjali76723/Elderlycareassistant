@@ -122,6 +122,7 @@ const AlertStatusBadge = ({ status }) => {
 export default function CaregiverAlerts() {
   const { serverUrl, socket, logout } = useContext(userDataContext);
   const [alerts, setAlerts] = useState([]);
+  const [loadingButtons, setLoadingButtons] = useState(new Set());
   const navigate = useNavigate();
 
   const fetchAlerts = async () => {
@@ -135,6 +136,13 @@ export default function CaregiverAlerts() {
 
   useEffect(() => {
     fetchAlerts();
+    
+    // Set up periodic refresh to ensure data consistency
+    const refreshInterval = setInterval(() => {
+      fetchAlerts();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(refreshInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -142,7 +150,20 @@ export default function CaregiverAlerts() {
     if (!socket) return;
 
     const onEmergency = ({ alert }) => {
-      setAlerts((prev) => [alert, ...prev]);
+      if (!alert || !alert._id) {
+        console.warn("Received invalid emergency alert:", alert);
+        return;
+      }
+
+      setAlerts((prev) => {
+        // Check if alert already exists to prevent duplicates
+        const exists = prev.find(a => a._id === alert._id);
+        if (exists) {
+          console.log("Alert already exists, updating instead of adding");
+          return prev.map((a) => (a._id === alert._id ? alert : a));
+        }
+        return [alert, ...prev];
+      });
 
       try {
         const utter = new SpeechSynthesisUtterance(
@@ -161,7 +182,16 @@ export default function CaregiverAlerts() {
     };
 
     const onUpdate = ({ alert }) => {
-      setAlerts((prev) => prev.map((a) => (a._id === alert._id ? alert : a)));
+      if (!alert || !alert._id) {
+        console.warn("Received invalid alert update:", alert);
+        return;
+      }
+      
+      setAlerts((prev) => {
+        const updated = prev.map((a) => (a._id === alert._id ? alert : a));
+        console.log(`Updated alert ${alert._id} status to ${alert.status}`);
+        return updated;
+      });
     };
 
     socket.on("emergency", onEmergency);
@@ -174,20 +204,52 @@ export default function CaregiverAlerts() {
   }, [socket]);
 
   const acknowledge = async (id) => {
+    setLoadingButtons(prev => new Set(prev).add(`ack-${id}`));
     try {
-      await axios.post(`${serverUrl}/api/emergency/ack/${id}`, {}, { withCredentials: true });
-      setAlerts((prev) => prev.map((a) => (a._id === id ? { ...a, status: "acknowledged" } : a)));
+      const response = await axios.post(`${serverUrl}/api/emergency/ack/${id}`, {}, { withCredentials: true });
+      // Update the alert in state with the response data
+      if (response.data && response.data.alert) {
+        setAlerts((prev) => prev.map((a) => (a._id === id ? response.data.alert : a)));
+      } else {
+        // Fallback to manual update
+        setAlerts((prev) => prev.map((a) => (a._id === id ? { ...a, status: "acknowledged" } : a)));
+      }
+      console.log("Alert acknowledged successfully");
     } catch (err) {
       console.error("acknowledge error:", err);
+      // Optionally show user feedback
+      alert("Failed to acknowledge alert. Please try again.");
+    } finally {
+      setLoadingButtons(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`ack-${id}`);
+        return newSet;
+      });
     }
   };
 
   const resolve = async (id) => {
+    setLoadingButtons(prev => new Set(prev).add(`resolve-${id}`));
     try {
-      await axios.post(`${serverUrl}/api/emergency/resolve/${id}`, {}, { withCredentials: true });
-      setAlerts((prev) => prev.map((a) => (a._id === id ? { ...a, status: "resolved" } : a)));
+      const response = await axios.post(`${serverUrl}/api/emergency/resolve/${id}`, {}, { withCredentials: true });
+      // Update the alert in state with the response data
+      if (response.data && response.data.alert) {
+        setAlerts((prev) => prev.map((a) => (a._id === id ? response.data.alert : a)));
+      } else {
+        // Fallback to manual update
+        setAlerts((prev) => prev.map((a) => (a._id === id ? { ...a, status: "resolved" } : a)));
+      }
+      console.log("Alert resolved successfully");
     } catch (err) {
       console.error("resolve error:", err);
+      // Optionally show user feedback
+      alert("Failed to resolve alert. Please try again.");
+    } finally {
+      setLoadingButtons(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`resolve-${id}`);
+        return newSet;
+      });
     }
   };
 
@@ -436,34 +498,33 @@ export default function CaregiverAlerts() {
                       }`}></div>
                       
                       <div className="relative z-10">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-4">
-                              <div className={`p-2.5 rounded-xl ${
-                                alert.status === 'open' 
-                                  ? 'bg-rose-500/20 text-rose-400' 
-                                  : alert.status === 'acknowledged'
-                                    ? 'bg-amber-500/20 text-amber-400'
-                                    : 'bg-emerald-500/20 text-emerald-400'
-                              }`}>
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  {alert.status === 'open' ? (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                  ) : alert.status === 'acknowledged' ? (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  ) : (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                                  )}
-                                </svg>
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-start gap-4">
+                            <div className={`p-2.5 rounded-xl ${
+                              alert.status === 'open' 
+                                ? 'bg-rose-500/20 text-rose-400' 
+                                : alert.status === 'acknowledged'
+                                  ? 'bg-amber-500/20 text-amber-400'
+                                  : 'bg-emerald-500/20 text-emerald-400'
+                            }`}>
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                {alert.status === 'open' ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                ) : alert.status === 'acknowledged' ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                                )}
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                <h3 id={`alert-${alert._id}`} className="text-lg font-semibold text-white">
+                                  {alert.message || "Emergency Alert"}
+                                </h3>
+                                <AlertStatusBadge status={alert.status} />
                               </div>
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                  <h3 id={`alert-${alert._id}`} className="text-lg font-semibold text-white">
-                                    {alert.message || "Emergency Alert"}
-                                  </h3>
-                                  <AlertStatusBadge status={alert.status} />
-                                </div>
-                              
+                            
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-rose-100/70">
                                 {alert.elderlyId && (
                                   <span className="flex items-center">
@@ -497,38 +558,36 @@ export default function CaregiverAlerts() {
                               </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {alert.status === "open" && (
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => acknowledge(alert._id)}
-                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium shadow-lg hover:shadow-amber-500/30 transition-all duration-300"
-                            >
-                              Acknowledge
-                            </motion.button>
-                          )}
                           
-                          {alert.status !== "resolved" ? (
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => resolve(alert._id)}
-                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white font-medium shadow-lg hover:shadow-emerald-500/30 transition-all duration-300"
-                            >
-                              Mark as Resolved
-                            </motion.button>
-                          ) : (
-                            <motion.div 
-                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 font-medium border border-emerald-500/30 cursor-default"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                            >
-                              Resolved
-                            </motion.div>
-                          )}
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {alert.status === "open" && (
+                              <PrimaryButton
+                                onClick={() => acknowledge(alert._id)}
+                                isLoading={loadingButtons.has(`ack-${alert._id}`)}
+                                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-amber-500/30"
+                              >
+                                {loadingButtons.has(`ack-${alert._id}`) ? "Acknowledging..." : "Acknowledge"}
+                              </PrimaryButton>
+                            )}
+                            
+                            {alert.status !== "resolved" ? (
+                              <PrimaryButton
+                                onClick={() => resolve(alert._id)}
+                                isLoading={loadingButtons.has(`resolve-${alert._id}`)}
+                                className="bg-gradient-to-r from-emerald-500 to-green-500 hover:shadow-emerald-500/30"
+                              >
+                                {loadingButtons.has(`resolve-${alert._id}`) ? "Resolving..." : "Mark as Resolved"}
+                              </PrimaryButton>
+                            ) : (
+                              <motion.div 
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 font-medium border border-emerald-500/30 cursor-default"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                              >
+                                ✓ Resolved
+                              </motion.div>
+                            )}
                           </div>
                         </div>
                       </div>
