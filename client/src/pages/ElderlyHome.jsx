@@ -576,10 +576,17 @@ export default function ElderlyHome() {
 
   // Socket.io reminder listener
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log("🔌 ElderlyHome: No socket available for reminder listening");
+      return;
+    }
+
+    console.log("🔌 ElderlyHome: Setting up reminder listener on socket:", socket.id);
+    console.log("👤 ElderlyHome: User data:", userData);
 
     const handleReminder = (reminder) => {
-      console.log("Received reminder:", reminder);
+      console.log("🔔 ElderlyHome: Received reminder:", reminder);
+      console.log("🔔 ElderlyHome: Current time:", new Date().toISOString());
       setCurrentReminder(reminder);
       
       // Speak the reminder
@@ -587,6 +594,7 @@ export default function ElderlyHome() {
       
       // Auto-dismiss after 2 minutes if not acknowledged
       const timeoutId = setTimeout(() => {
+        console.log("⏰ ElderlyHome: Auto-dismissing reminder after 2 minutes");
         setCurrentReminder(null);
       }, 2 * 60 * 1000);
       
@@ -595,12 +603,25 @@ export default function ElderlyHome() {
 
     // Listen for reminder events
     socket.on("reminder", handleReminder);
+    console.log("✅ ElderlyHome: Reminder listener attached");
+
+    // Add connection status logging
+    socket.on("connect", () => {
+      console.log("🔌 ElderlyHome: Socket connected, ID:", socket.id);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔌 ElderlyHome: Socket disconnected");
+    });
 
     // Cleanup
     return () => {
+      console.log("🧹 ElderlyHome: Cleaning up reminder listener");
       socket.off("reminder", handleReminder);
+      socket.off("connect");
+      socket.off("disconnect");
     };
-  }, [socket]);
+  }, [socket, userData]);
 
   // Fetch caregivers with token
   const fetchCaregivers = async () => {

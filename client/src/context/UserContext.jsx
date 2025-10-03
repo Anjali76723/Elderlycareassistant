@@ -46,9 +46,11 @@ function UserContext({ children }) {
     setSocket(s);
 
     const onConnect = () => {
-      console.log("client: socket connected", s.id);
+      console.log("🔌 UserContext: socket connected", s.id);
+      console.log("👤 UserContext: Joining room for user:", userData._id, "Role:", userData.role);
       s.emit("join", userData._id);
       if (userData.role === "caregiver") {
+        console.log("👨‍⚕️ UserContext: Joining caregiver room");
         s.emit("join-caregiver", userData._id);
       }
     };

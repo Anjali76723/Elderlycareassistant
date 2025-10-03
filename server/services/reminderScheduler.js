@@ -38,20 +38,36 @@ const startReminderScheduler = (io) => {
       if (!due || due.length === 0) return;
 
       console.log(`Reminder scheduler: found ${due.length} due reminders at ${now.toISOString()}`);
+      console.log("Due reminders details:", due.map(r => ({
+        id: r._id,
+        elderlyId: r.elderlyId,
+        message: r.message,
+        time: r.time,
+        active: r.active
+      })));
 
       for (const r of due) {
         try {
+          console.log(`Processing reminder ${r._id} for elderlyId: ${r.elderlyId}`);
+          
           // always emit to elderly personal room
           if (io) {
-            io.to(String(r.elderlyId)).emit("reminder", {
+            const roomName = String(r.elderlyId);
+            const reminderData = {
               id: r._id,
               message: r.message,
               meta: r.meta,
               time: r.time
-            });
-            console.log(`Emitted reminder ${r._id} to room ${String(r.elderlyId)}`);
+            };
+            
+            io.to(roomName).emit("reminder", reminderData);
+            console.log(`✅ Emitted reminder ${r._id} to room ${roomName}`, reminderData);
+            
+            // Check if anyone is in the room
+            const socketsInRoom = await io.in(roomName).fetchSockets();
+            console.log(`📊 Sockets in room ${roomName}:`, socketsInRoom.length);
           } else {
-            console.warn("Reminder scheduler: io not available on server, cannot emit socket event.");
+            console.warn("❌ Reminder scheduler: io not available on server, cannot emit socket event.");
           }
 
           // Optional SMS sending: only to elderly.emergencyContacts (family), never to caregivers
