@@ -1,10 +1,10 @@
 // client/src/pages/ElderlyHome.jsx
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { userDataContext } from "../context/UserContext";
-import axios from "axios";
 import api from "../utils/axiosConfig";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import CaregiverDebugger from '../components/CaregiverDebugger';
 
 export default function ElderlyHome() {
   // Get context values
@@ -1590,6 +1590,9 @@ export default function ElderlyHome() {
           </>
         )}
       </div>
+      
+      {/* Debug Component - Remove this after testing */}
+      <CaregiverDebugger />
     </div>
   );
 }
