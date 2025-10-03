@@ -144,6 +144,8 @@ export default function CaregiverReminders() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("Component mounted. ServerUrl:", serverUrl);
+    console.log("UserData:", userData);
     fetchReminders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -163,29 +165,50 @@ export default function CaregiverReminders() {
   const handleCreate = async (e) => {
     e.preventDefault();
     setErr("");
+    
+    console.log("Form submission started");
+    console.log("Form data:", { elderlyEmail, message, selectedDate, repeat });
+    
     if (!elderlyEmail || !message || !selectedDate) {
       setErr("Please fill all fields.");
+      console.log("Validation failed - missing fields");
       return;
     }
+    
     try {
       setLoading(true);
       // Convert selectedDate to ISO string for API
       const time = selectedDate.toISOString();
-      await axios.post(
+      console.log("Sending request to:", `${serverUrl}/api/reminder/create`);
+      console.log("Request payload:", { elderlyEmail, message, time, repeat });
+      
+      const response = await axios.post(
         `${serverUrl}/api/reminder/create`,
         { elderlyEmail, message, time, repeat },
         { withCredentials: true }
       );
+      
+      console.log("Reminder created successfully:", response.data);
       setLoading(false);
       setElderlyEmail("");
       setMessage("");
       setSelectedDate(new Date());
       setRepeat("none");
+      setErr(""); // Clear any previous errors
       fetchReminders();
+      
+      // Show success message
+      alert("Reminder created successfully!");
     } catch (error) {
       setLoading(false);
       console.error("create reminder error", error);
-      setErr(error?.response?.data?.message || "Error creating reminder");
+      console.error("Error response:", error.response);
+      console.error("Error message:", error.response?.data?.message);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          "Error creating reminder";
+      setErr(errorMessage);
     }
   };
 
@@ -517,9 +540,21 @@ export default function CaregiverReminders() {
                     </div>
                   )}
 
+                  {/* Debug info */}
+                  <div className="p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-200 text-xs">
+                    <strong>Debug:</strong> ServerUrl: {serverUrl || 'Not set'} | 
+                    Email: {elderlyEmail || 'Empty'} | 
+                    Message: {message || 'Empty'} | 
+                    Date: {selectedDate?.toLocaleString() || 'Not set'}
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loading}
+                    onClick={(e) => {
+                      console.log("Submit button clicked!");
+                      // Don't prevent default here, let the form handle it
+                    }}
                     className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {loading ? (
