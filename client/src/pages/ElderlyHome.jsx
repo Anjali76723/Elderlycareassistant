@@ -695,6 +695,27 @@ export default function ElderlyHome() {
     console.log("🔧 API Base URL:", api.defaults.baseURL);
     console.log("🔧 User data:", userData);
     
+    // FORCE SUCCESS TEST - Let's bypass the form and test direct API call
+    const testCaregiver = {
+      name: `Test ${Date.now()}`,
+      email: `test${Date.now()}@example.com`,
+      phone: `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+      receiveSMS: true,
+      isPrimary: false
+    };
+    
+    console.log("🚀 TESTING WITH DIRECT API CALL:", testCaregiver);
+    
+    try {
+      const directResponse = await api.post('/api/caregivers', testCaregiver);
+      console.log("✅ DIRECT API SUCCESS:", directResponse.data);
+      toast.success('Direct API test worked! Now trying your form...');
+    } catch (directError) {
+      console.error("❌ DIRECT API FAILED:", directError);
+      toast.error(`Direct API failed: ${directError.response?.data?.message || directError.message}`);
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -942,6 +963,33 @@ export default function ElderlyHome() {
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 12.094A5.973 5.973 0 004 15v1H1v-1a3 3 0 013.75-2.906z" />
               </svg>
               Caregivers
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const testData = {
+                    name: `Quick Test ${Date.now()}`,
+                    email: `quicktest${Date.now()}@example.com`,
+                    phone: `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+                    receiveSMS: true,
+                    isPrimary: false
+                  };
+                  console.log("🚀 QUICK TEST:", testData);
+                  const response = await api.post('/api/caregivers', testData);
+                  console.log("✅ QUICK TEST SUCCESS:", response.data);
+                  toast.success('Quick test worked! API is working!');
+                  fetchCaregivers();
+                } catch (error) {
+                  console.error("❌ QUICK TEST FAILED:", error);
+                  toast.error(`Quick test failed: ${error.response?.data?.message || error.message}`);
+                }
+              }}
+              className="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-lg font-bold shadow-xl flex items-center gap-3 transition-all"
+            >
+              <svg className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Quick Test
             </button>
             <button
               onClick={logout}
