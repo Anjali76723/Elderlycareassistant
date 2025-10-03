@@ -665,42 +665,43 @@ export default function ElderlyHome() {
     });
   };
 
-  // COPY EXACT QUICK TEST LOGIC
-  const handleAddCaregiver = async () => {
-    console.log("🚀 FORM BUTTON CLICKED - USING EXACT QUICK TEST LOGIC");
+  // SUPER SIMPLE CAREGIVER ADD
+  const handleAddCaregiver = () => {
+    console.log("🔥 BUTTON CLICKED!");
+    alert("Button clicked! Check console.");
     
-    try {
-      // Use form data but with same structure as quick test
-      const caregiverData = {
-        name: formData.name || `Form User ${Date.now()}`,
-        email: formData.email || `formuser${Date.now()}@example.com`,
-        phone: formData.phone || `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-        receiveSMS: formData.receiveSMS !== undefined ? formData.receiveSMS : true,
-        isPrimary: formData.isPrimary !== undefined ? formData.isPrimary : false
-      };
-      
-      console.log("🚀 FORM TEST DATA:", caregiverData);
-      
-      const response = await api.post('/api/caregivers', caregiverData);
-      console.log("✅ FORM TEST SUCCESS:", response.data);
-      toast.success('Form test worked! Caregiver added!');
-      
-      // Clear form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        receiveSMS: true,
-        isPrimary: false
+    // Just copy the exact Quick Test logic
+    const testData = {
+      name: formData.name || `Test User ${Date.now()}`,
+      email: formData.email || `test${Date.now()}@example.com`,
+      phone: formData.phone || `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+      receiveSMS: true,
+      isPrimary: false
+    };
+    
+    console.log("📤 Data to send:", testData);
+    
+    api.post('/api/caregivers', testData)
+      .then(response => {
+        console.log("✅ SUCCESS:", response.data);
+        toast.success('Caregiver added successfully!');
+        
+        // Clear form
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          receiveSMS: true,
+          isPrimary: false
+        });
+        
+        // Refresh list
+        fetchCaregivers();
+      })
+      .catch(error => {
+        console.error("❌ ERROR:", error);
+        toast.error('Failed to add caregiver');
       });
-      
-      // Refresh list
-      fetchCaregivers();
-      
-    } catch (error) {
-      console.error("❌ FORM TEST FAILED:", error);
-      toast.error(`Form test failed: ${error.response?.data?.message || error.message}`);
-    }
   };
 
   // Handle edit action
@@ -1295,29 +1296,10 @@ export default function ElderlyHome() {
                     <div className="pt-2 space-y-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          console.log("🔥 BUTTON CLICKED - CALLING handleAddCaregiver");
-                          handleAddCaregiver();
-                        }}
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5"
+                        onClick={handleAddCaregiver}
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                       >
-                        {isLoading ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            {editingId ? 'Update Caregiver' : 'Add Caregiver'}
-                          </>
-                        )}
+                        Add Caregiver
                       </button>
                       
                       <button
