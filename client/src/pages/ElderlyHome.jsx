@@ -623,6 +623,19 @@ export default function ElderlyHome() {
     };
   }, [socket, userData]);
 
+  // DEBUG: Manual test function to simulate reminder
+  const testReminder = () => {
+    console.log("🧪 Testing manual reminder trigger");
+    const testReminderData = {
+      id: "test-123",
+      message: "Test reminder - take your medication",
+      time: new Date().toISOString(),
+      meta: {}
+    };
+    setCurrentReminder(testReminderData);
+    speakText(`Test reminder: ${testReminderData.message}`, "en-IN");
+  };
+
   // Fetch caregivers with token
   const fetchCaregivers = async () => {
     try {
