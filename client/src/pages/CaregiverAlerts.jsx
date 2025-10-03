@@ -121,16 +121,66 @@ const AlertStatusBadge = ({ status }) => {
 
 export default function CaregiverAlerts() {
   const { serverUrl, socket, logout } = useContext(userDataContext);
-  const [alerts, setAlerts] = useState([]);
+  const [alerts, setAlerts] = useState(() => {
+    // Initialize with cached alerts from localStorage
+    try {
+      const cachedAlerts = localStorage.getItem('caregiverAlerts');
+      return cachedAlerts ? JSON.parse(cachedAlerts) : [];
+    } catch (err) {
+      console.warn("Failed to load cached alerts:", err);
+      return [];
+    }
+  });
   const [loadingButtons, setLoadingButtons] = useState(new Set());
   const navigate = useNavigate();
 
+  // Helper function to update alerts and cache them
+  const updateAlertsAndCache = (newAlerts) => {
+    setAlerts(newAlerts);
+    try {
+      localStorage.setItem('caregiverAlerts', JSON.stringify(newAlerts));
+    } catch (err) {
+      console.warn("Failed to cache alerts:", err);
+    }
+  };
+
+  // Helper function to clear cached alerts
+  const clearAlertsCache = () => {
+    try {
+      localStorage.removeItem('caregiverAlerts');
+    } catch (err) {
+      console.warn("Failed to clear alerts cache:", err);
+    }
+  };
+
+  // Enhanced logout function that clears cache
+  const handleLogout = () => {
+    clearAlertsCache();
+    logout();
+  };
+
   const fetchAlerts = async () => {
     try {
+      console.log("Fetching alerts from:", `${serverUrl}/api/emergency/list`);
       const res = await axios.get(`${serverUrl}/api/emergency/list`, { withCredentials: true });
-      setAlerts(res.data || []);
+      console.log("Received alerts:", res.data?.length || 0, "alerts");
+      
+      if (res.data && Array.isArray(res.data)) {
+        updateAlertsAndCache(res.data);
+        console.log("Successfully set alerts:", res.data.length);
+      } else {
+        console.warn("Invalid alerts data received:", res.data);
+        // Don't clear cached alerts if API returns invalid data
+      }
     } catch (err) {
       console.error("fetchAlerts error:", err);
+      if (err.response) {
+        console.error("Error response:", err.response.status, err.response.data);
+      }
+      // Don't clear alerts on error, keep existing ones
+      if (err.response?.status === 401) {
+        console.error("Authentication error - user may need to log in again");
+      }
     }
   };
 
@@ -146,6 +196,13 @@ export default function CaregiverAlerts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Clear cached alerts when component unmounts or user logs out
+  useEffect(() => {
+    return () => {
+      // Don't clear cache on unmount, only clear when explicitly logging out
+    };
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
 
@@ -158,11 +215,22 @@ export default function CaregiverAlerts() {
       setAlerts((prev) => {
         // Check if alert already exists to prevent duplicates
         const exists = prev.find(a => a._id === alert._id);
+        let newAlerts;
         if (exists) {
           console.log("Alert already exists, updating instead of adding");
-          return prev.map((a) => (a._id === alert._id ? alert : a));
+          newAlerts = prev.map((a) => (a._id === alert._id ? alert : a));
+        } else {
+          newAlerts = [alert, ...prev];
         }
-        return [alert, ...prev];
+        
+        // Cache the updated alerts
+        try {
+          localStorage.setItem('caregiverAlerts', JSON.stringify(newAlerts));
+        } catch (err) {
+          console.warn("Failed to cache alerts:", err);
+        }
+        
+        return newAlerts;
       });
 
       try {
@@ -190,6 +258,14 @@ export default function CaregiverAlerts() {
       setAlerts((prev) => {
         const updated = prev.map((a) => (a._id === alert._id ? alert : a));
         console.log(`Updated alert ${alert._id} status to ${alert.status}`);
+        
+        // Cache the updated alerts
+        try {
+          localStorage.setItem('caregiverAlerts', JSON.stringify(updated));
+        } catch (err) {
+          console.warn("Failed to cache alerts:", err);
+        }
+        
         return updated;
       });
     };
@@ -209,10 +285,12 @@ export default function CaregiverAlerts() {
       const response = await axios.post(`${serverUrl}/api/emergency/ack/${id}`, {}, { withCredentials: true });
       // Update the alert in state with the response data
       if (response.data && response.data.alert) {
-        setAlerts((prev) => prev.map((a) => (a._id === id ? response.data.alert : a)));
+        const updatedAlerts = alerts.map((a) => (a._id === id ? response.data.alert : a));
+        updateAlertsAndCache(updatedAlerts);
       } else {
         // Fallback to manual update
-        setAlerts((prev) => prev.map((a) => (a._id === id ? { ...a, status: "acknowledged" } : a)));
+        const updatedAlerts = alerts.map((a) => (a._id === id ? { ...a, status: "acknowledged" } : a));
+        updateAlertsAndCache(updatedAlerts);
       }
       console.log("Alert acknowledged successfully");
     } catch (err) {
@@ -234,10 +312,12 @@ export default function CaregiverAlerts() {
       const response = await axios.post(`${serverUrl}/api/emergency/resolve/${id}`, {}, { withCredentials: true });
       // Update the alert in state with the response data
       if (response.data && response.data.alert) {
-        setAlerts((prev) => prev.map((a) => (a._id === id ? response.data.alert : a)));
+        const updatedAlerts = alerts.map((a) => (a._id === id ? response.data.alert : a));
+        updateAlertsAndCache(updatedAlerts);
       } else {
         // Fallback to manual update
-        setAlerts((prev) => prev.map((a) => (a._id === id ? { ...a, status: "resolved" } : a)));
+        const updatedAlerts = alerts.map((a) => (a._id === id ? { ...a, status: "resolved" } : a));
+        updateAlertsAndCache(updatedAlerts);
       }
       console.log("Alert resolved successfully");
     } catch (err) {
@@ -327,7 +407,7 @@ export default function CaregiverAlerts() {
               </PrimaryButton>
               
               <SecondaryButton
-                onClick={logout}
+                onClick={handleLogout}
                 className="flex-1 md:flex-none"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
