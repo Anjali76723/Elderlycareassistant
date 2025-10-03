@@ -396,13 +396,7 @@ export default function CaregiverReminders() {
                     </div>
                     
                     <div className="w-full">
-                      <label className="block text-sm text-cyan-100/80 font-medium mb-1">Date & Time</label>
-                      <p className="text-xs text-cyan-100/60 mb-2">
-                        Select exact date and time (minute precision) • 
-                        <span className="text-cyan-300 font-medium">
-                          {selectedDate.toLocaleString()}
-                        </span>
-                      </p>
+                      <label className="block text-sm text-cyan-100/80 font-medium mb-2">Date & Time</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                           <svg className="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -421,6 +415,18 @@ export default function CaregiverReminders() {
                           className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent cursor-pointer"
                           calendarClassName="bg-gray-800 border border-white/10 rounded-xl overflow-hidden shadow-2xl"
                           timeClassName={() => "text-white hover:bg-cyan-500/20 transition-colors"}
+                          popperProps={{
+                            strategy: "fixed",
+                            modifiers: [
+                              {
+                                name: "preventOverflow",
+                                options: {
+                                  rootBoundary: "viewport",
+                                },
+                              },
+                            ],
+                          }}
+                          popperClassName="z-[9999]"
                           dayClassName={(date) => {
                             const today = new Date();
                             const isToday = date.getDate() === today.getDate() && 
@@ -734,6 +740,15 @@ export default function CaregiverReminders() {
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
           backdrop-filter: blur(16px) !important;
           font-family: inherit !important;
+          z-index: 9999 !important;
+        }
+        
+        .react-datepicker-popper {
+          z-index: 9999 !important;
+        }
+        
+        .react-datepicker__tab-loop {
+          z-index: 9999 !important;
         }
         
         .react-datepicker__header {
