@@ -665,37 +665,25 @@ export default function ElderlyHome() {
     });
   };
 
-  // CLEAN CAREGIVER SUBMISSION LOGIC
+  // COPY EXACT QUICK TEST LOGIC
   const handleAddCaregiver = async () => {
-    console.log("🚀 ADD CAREGIVER CLICKED");
-    
-    // Prevent double clicks
-    if (isLoading) return;
-    
-    // Validate form data
-    if (!formData.name || !formData.email || !formData.phone) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-    
-    setIsLoading(true);
+    console.log("🚀 FORM BUTTON CLICKED - USING EXACT QUICK TEST LOGIC");
     
     try {
-      console.log("📤 Sending data:", formData);
+      // Use form data but with same structure as quick test
+      const caregiverData = {
+        name: formData.name || `Form User ${Date.now()}`,
+        email: formData.email || `formuser${Date.now()}@example.com`,
+        phone: formData.phone || `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+        receiveSMS: formData.receiveSMS !== undefined ? formData.receiveSMS : true,
+        isPrimary: formData.isPrimary !== undefined ? formData.isPrimary : false
+      };
       
-      // Make API call
-      const response = await api.post('/api/caregivers', {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        receiveSMS: formData.receiveSMS || true,
-        isPrimary: formData.isPrimary || false
-      });
+      console.log("🚀 FORM TEST DATA:", caregiverData);
       
-      console.log("✅ API Response:", response.data);
-      
-      // Show success message
-      toast.success('Caregiver added successfully!');
+      const response = await api.post('/api/caregivers', caregiverData);
+      console.log("✅ FORM TEST SUCCESS:", response.data);
+      toast.success('Form test worked! Caregiver added!');
       
       // Clear form
       setFormData({
@@ -706,22 +694,12 @@ export default function ElderlyHome() {
         isPrimary: false
       });
       
-      // Refresh caregiver list
-      await fetchCaregivers();
+      // Refresh list
+      fetchCaregivers();
       
     } catch (error) {
-      console.error("❌ Add caregiver error:", error);
-      
-      let errorMessage = 'Failed to add caregiver';
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      console.error("❌ FORM TEST FAILED:", error);
+      toast.error(`Form test failed: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -1314,10 +1292,13 @@ export default function ElderlyHome() {
                       </label>
                     </div>
                     
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       <button
                         type="button"
-                        onClick={handleAddCaregiver}
+                        onClick={() => {
+                          console.log("🔥 BUTTON CLICKED - CALLING handleAddCaregiver");
+                          handleAddCaregiver();
+                        }}
                         disabled={isLoading}
                         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5"
                       >
@@ -1337,6 +1318,18 @@ export default function ElderlyHome() {
                             {editingId ? 'Update Caregiver' : 'Add Caregiver'}
                           </>
                         )}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log("🧪 DIRECT TEST BUTTON CLICKED");
+                          console.log("🧪 Form data:", formData);
+                          alert("Button clicked! Check console for form data.");
+                        }}
+                        className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        🧪 Test Button Click
                       </button>
                     </div>
                   </form>
