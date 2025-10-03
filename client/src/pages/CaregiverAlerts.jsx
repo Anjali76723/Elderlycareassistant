@@ -1,5 +1,5 @@
 // client/src/pages/CaregiverAlerts.jsx
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
 import axios from "axios";
 import { userDataContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
@@ -283,19 +283,38 @@ export default function CaregiverAlerts() {
     setLoadingButtons(prev => new Set(prev).add(`ack-${id}`));
     try {
       const response = await axios.post(`${serverUrl}/api/emergency/ack/${id}`, {}, { withCredentials: true });
+      
       // Update the alert in state with the response data
-      if (response.data && response.data.alert) {
-        const updatedAlerts = alerts.map((a) => (a._id === id ? response.data.alert : a));
-        updateAlertsAndCache(updatedAlerts);
-      } else {
-        // Fallback to manual update
-        const updatedAlerts = alerts.map((a) => (a._id === id ? { ...a, status: "acknowledged" } : a));
-        updateAlertsAndCache(updatedAlerts);
-      }
-      console.log("Alert acknowledged successfully");
+      setAlerts(prevAlerts => {
+        let updatedAlerts;
+        if (response.data && response.data.alert) {
+          updatedAlerts = prevAlerts.map((a) => (a._id === id ? response.data.alert : a));
+        } else {
+          // Fallback to manual update
+          updatedAlerts = prevAlerts.map((a) => (a._id === id ? { ...a, status: "acknowledged" } : a));
+        }
+        
+        // Cache the updated alerts
+        try {
+          localStorage.setItem('caregiverAlerts', JSON.stringify(updatedAlerts));
+        } catch (err) {
+          console.warn("Failed to cache alerts:", err);
+        }
+        
+        console.log("Alert acknowledged successfully, stats will update");
+        
+        // Show success feedback
+        const alertElement = document.getElementById(`alert-${id}`);
+        if (alertElement) {
+          alertElement.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
+          setTimeout(() => {
+            alertElement.style.backgroundColor = '';
+          }, 1000);
+        }
+        return updatedAlerts;
+      });
     } catch (err) {
       console.error("acknowledge error:", err);
-      // Optionally show user feedback
       alert("Failed to acknowledge alert. Please try again.");
     } finally {
       setLoadingButtons(prev => {
@@ -310,19 +329,38 @@ export default function CaregiverAlerts() {
     setLoadingButtons(prev => new Set(prev).add(`resolve-${id}`));
     try {
       const response = await axios.post(`${serverUrl}/api/emergency/resolve/${id}`, {}, { withCredentials: true });
+      
       // Update the alert in state with the response data
-      if (response.data && response.data.alert) {
-        const updatedAlerts = alerts.map((a) => (a._id === id ? response.data.alert : a));
-        updateAlertsAndCache(updatedAlerts);
-      } else {
-        // Fallback to manual update
-        const updatedAlerts = alerts.map((a) => (a._id === id ? { ...a, status: "resolved" } : a));
-        updateAlertsAndCache(updatedAlerts);
-      }
-      console.log("Alert resolved successfully");
+      setAlerts(prevAlerts => {
+        let updatedAlerts;
+        if (response.data && response.data.alert) {
+          updatedAlerts = prevAlerts.map((a) => (a._id === id ? response.data.alert : a));
+        } else {
+          // Fallback to manual update
+          updatedAlerts = prevAlerts.map((a) => (a._id === id ? { ...a, status: "resolved" } : a));
+        }
+        
+        // Cache the updated alerts
+        try {
+          localStorage.setItem('caregiverAlerts', JSON.stringify(updatedAlerts));
+        } catch (err) {
+          console.warn("Failed to cache alerts:", err);
+        }
+        
+        console.log("Alert resolved successfully, stats will update");
+        
+        // Show success feedback
+        const alertElement = document.getElementById(`alert-${id}`);
+        if (alertElement) {
+          alertElement.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+          setTimeout(() => {
+            alertElement.style.backgroundColor = '';
+          }, 1000);
+        }
+        return updatedAlerts;
+      });
     } catch (err) {
       console.error("resolve error:", err);
-      // Optionally show user feedback
       alert("Failed to resolve alert. Please try again.");
     } finally {
       setLoadingButtons(prev => {
@@ -347,13 +385,21 @@ export default function CaregiverAlerts() {
     }));
   }, []);
 
-  // Calculate alert statistics
-  const stats = {
-    total: alerts.length,
-    open: alerts.filter(a => a.status === 'open').length,
-    acknowledged: alerts.filter(a => a.status === 'acknowledged').length,
-    resolved: alerts.filter(a => a.status === 'resolved').length
-  };
+  // Calculate alert statistics with useMemo to ensure proper recalculation
+  const stats = useMemo(() => {
+    const calculated = {
+      total: alerts.length,
+      open: alerts.filter(a => a.status === 'open').length,
+      acknowledged: alerts.filter(a => a.status === 'acknowledged').length,
+      resolved: alerts.filter(a => a.status === 'resolved').length
+    };
+    
+    // Debug logging for stats
+    console.log("Stats recalculated:", calculated);
+    console.log("Current alerts:", alerts.map(a => ({ id: a._id?.substring(0, 8), status: a.status })));
+    
+    return calculated;
+  }, [alerts]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-rose-900 via-purple-900 to-indigo-900 text-white">
@@ -420,7 +466,13 @@ export default function CaregiverAlerts() {
         </motion.header>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" 
+          key={`stats-${stats.total}-${stats.open}-${stats.acknowledged}-${stats.resolved}`}
+          initial={{ scale: 1 }}
+          animate={{ scale: [1, 1.02, 1] }}
+          transition={{ duration: 0.3 }}
+        >
           <GlassCard>
             <div className="p-6">
               <div className="flex items-center justify-between">
@@ -486,7 +538,7 @@ export default function CaregiverAlerts() {
               </div>
             </div>
           </GlassCard>
-        </div>
+        </motion.div>
 
         {/* Alerts List */}
         <GlassCard>
